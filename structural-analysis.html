@@ -1,646 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Structural Analysis - Kafka Design</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      overflow: hidden;
-    }
-    
-    .header {
-      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-    
-    .header h1 {
-      margin: 0;
-      font-size: 2.5em;
-      font-weight: 300;
-    }
-    
-    .header p {
-      margin: 10px 0 0 0;
-      opacity: 0.9;
-      font-size: 1.1em;
-    }
-    
-    .content {
-      padding: 30px;
-    }
-    
-    .input-section {
-      margin-bottom: 30px;
-    }
-    
-    .input-group {
-      margin: 20px 0;
-    }
-    
-    .input-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #2c3e50;
-      font-size: 1.1em;
-    }
-    
-    .input-group input {
-      width: 200px;
-      padding: 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
-    
-    .input-group input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    .spreadsheet-container {
-      margin: 25px 0;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    .spreadsheet-title {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 15px 20px;
-      margin: 0;
-      font-size: 1.3em;
-      font-weight: 600;
-    }
-    
-    .table-container {
-      overflow-x: auto;
-      background: white;
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    
-    th {
-      background: #f8f9fa;
-      padding: 15px 12px;
-      text-align: left;
-      font-weight: 600;
-      color: #2c3e50;
-      border-bottom: 2px solid #e9ecef;
-    }
-    
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #e9ecef;
-      vertical-align: middle;
-    }
-    
-    tr:hover {
-      background-color: #f8f9fa;
-    }
-    
-    .table-input {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: border-color 0.3s;
-    }
-    
-    .table-input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-    }
-    
-    .btn {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      transition: all 0.3s;
-    }
-    
-    .btn-add {
-      background: #28a745;
-      color: white;
-      margin: 15px 0;
-      padding: 10px 20px;
-      font-size: 14px;
-    }
-    
-    .btn-add:hover {
-      background: #218838;
-      transform: translateY(-1px);
-    }
-    
-    .btn-remove {
-      background: #dc3545;
-      color: white;
-    }
-    
-    .btn-remove:hover {
-      background: #c82333;
-    }
-    
-    .btn-analyze {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
-      padding: 15px 40px;
-      font-size: 18px;
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin: 30px 0;
-      transition: all 0.3s;
-      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    }
-    
-    .btn-analyze:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-    }
-    
-    .results {
-      margin-top: 30px;
-      padding: 25px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-radius: 15px;
-      box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
-    }
-    
-    .results h3 {
-      color: #2c3e50;
-      margin-top: 0;
-      font-size: 1.5em;
-      font-weight: 600;
-    }
-    
-    .beam-diagram {
-      margin: 20px 0;
-      font-family: 'Courier New', monospace;
-      background: #2c3e50;
-      color: #ecf0f1;
-      padding: 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      line-height: 1.4;
-      overflow-x: auto;
-    }
-    
-    .calculation-results {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin: 20px 0;
-    }
-    
-    .result-card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    
-    .result-value {
-      font-size: 2em;
-      font-weight: bold;
-      color: #667eea;
-      margin: 10px 0;
-    }
-    
-    .result-label {
-      color: #6c757d;
-      font-size: 0.9em;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    
-    #plotlyDiv {
-      width: 100%;
-      height: 700px;
-      margin-top: 25px;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    
-    .back-link {
-      display: inline-block;
-      margin-top: 30px;
-      padding: 12px 24px;
-      background: #6c757d;
-      color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      transition: all 0.3s;
-    }
-    
-    .back-link:hover {
-      background: #5a6268;
-      transform: translateY(-1px);
-    }
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
-    .empty-row {
-      opacity: 0.6;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Structural Beam Analysis</h1>
-      <p>Advanced analysis of simply supported beams with interactive visualization</p>
-    </div>
-    
-    <div class="content">
-      <div class="input-section">
-        <div class="input-group">
-          <label for="beamLength">Beam Length (ft):</label>
-          <input type="number" id="beamLength" value="20" step="0.1" min="0.1">
-        </div>
-      </div>
+# Prompt for beam length
+L = float(input("Beam length (ft): "))
 
-      <div class="spreadsheet-container">
-        <h3 class="spreadsheet-title">Point Loads</h3>
-        <div class="table-container">
-          <table id="pointLoadsTable">
-            <thead>
-              <tr>
-                <th>Location (ft)</th>
-                <th>Load (kips)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="pointLoadsBody">
-              <tr>
-                <td><input type="number" class="table-input point-location" value="10" step="0.1" min="0"></td>
-                <td><input type="number" class="table-input point-magnitude" value="5" step="0.1"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-              <tr class="empty-row">
-                <td><input type="number" class="table-input point-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-                <td><input type="number" class="table-input point-magnitude" value="" step="0.1" placeholder="Enter load"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button class="btn btn-add" onclick="addPointLoad()">+ Add Point Load</button>
-      </div>
+# Prompt for point loads
+point_loads = []
+while True:
+    inp = input("Location (ft) and Pu (kips) separated by space, or empty to stop: ")
+    if not inp:
+        break
+    loc, pu = map(float, inp.split())
+    if loc > L or loc < 0:
+        print("Location must be between 0 and beam length. Skipping.")
+        continue
+    point_loads.append((loc, pu))
 
-      <div class="spreadsheet-container">
-        <h3 class="spreadsheet-title">Distributed Loads</h3>
-        <div class="table-container">
-          <table id="distributedLoadsTable">
-            <thead>
-              <tr>
-                <th>Start (ft)</th>
-                <th>End (ft)</th>
-                <th>Load (kips/ft)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="distributedLoadsBody">
-              <tr>
-                <td><input type="number" class="table-input dist-start" value="2" step="0.1" min="0"></td>
-                <td><input type="number" class="table-input dist-end" value="8" step="0.1" min="0"></td>
-                <td><input type="number" class="table-input dist-magnitude" value="1" step="0.1"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-              <tr class="empty-row">
-                <td><input type="number" class="table-input dist-start" value="" step="0.1" min="0" placeholder="Start"></td>
-                <td><input type="number" class="table-input dist-end" value="" step="0.1" min="0" placeholder="End"></td>
-                <td><input type="number" class="table-input dist-magnitude" value="" step="0.1" placeholder="Load"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button class="btn btn-add" onclick="addDistributedLoad()">+ Add Distributed Load</button>
-      </div>
+# Prompt for ratio
+ratio = float(input("Ratio of combined ultimate load to DL: "))
 
-      <div style="text-align: center;">
-        <button class="btn-analyze" onclick="analyzeBeam()">🔍 Analyze Beam</button>
-      </div>
+# Prompt for max deflection
+delta_max = float(input("Max deflection (in): "))
 
-      <div id="results" class="results" style="display: none;">
-        <h3>Analysis Results</h3>
-        <div id="beamRepresentation" class="beam-diagram"></div>
-        <div class="calculation-results">
-          <div class="result-card">
-            <div class="result-label">Ultimate Moment</div>
-            <div class="result-value" id="momentValue">0.00</div>
-            <div>kip-ft</div>
-          </div>
-          <div class="result-card">
-            <div class="result-label">Ultimate Shear</div>
-            <div class="result-value" id="shearValue">0.00</div>
-            <div>kips</div>
-          </div>
-        </div>
-        <div id="plotlyDiv"></div>
-      </div>
+# Calculate Vu and Mu
+if point_loads:
+    R_left = sum(pu * (L - loc) / L for loc, pu in point_loads)
+    R_right = sum(pu * loc / L for loc, pu in point_loads)
+    Vu = max(R_left, R_right)
 
-      <a href="index.html" class="back-link">← Back to Home</a>
-    </div>
-  </div>
+    # For Mu
+    num_points = 1000
+    x = np.linspace(0, L, num_points)
+    dx = x[1] - x[0]
+    V_arr = np.full(num_points, R_left)
+    for loc, pu in point_loads:
+        V_arr[x > loc] -= pu
+    M_arr = np.cumsum(V_arr) * dx
+    Mu = max(abs(M_arr))
+else:
+    Vu = 0.0
+    Mu = 0.0
 
-  <script>
-    function addPointLoad() {
-      const tbody = document.getElementById('pointLoadsBody');
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="number" class="table-input point-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-        <td><input type="number" class="table-input point-magnitude" value="" step="0.1" placeholder="Enter load"></td>
-        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-      `;
-      tbody.appendChild(newRow);
-    }
+# For EI required
+point_loads_dl = [(loc, pu / ratio) for loc, pu in point_loads]
+L_in = L * 12
+x_in = np.linspace(0, L_in, 1000)
 
-    function addDistributedLoad() {
-      const tbody = document.getElementById('distributedLoadsBody');
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="number" class="table-input dist-start" value="" step="0.1" min="0" placeholder="Start"></td>
-        <td><input type="number" class="table-input dist-end" value="" step="0.1" min="0" placeholder="End"></td>
-        <td><input type="number" class="table-input dist-magnitude" value="" step="0.1" placeholder="Load"></td>
-        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-      `;
-      tbody.appendChild(newRow);
-    }
+def deflection_at_x(x, a, P, L, EI):
+    b = L - a
+    if x <= a:
+        return P * b * x * (L**2 - b**2 - x**2) / (6 * EI * L)
+    else:
+        return P * a * (L - x) * (L**2 - a**2 - (L - x)**2) / (6 * EI * L)
 
-    function removeRow(button) {
-      const row = button.closest('tr');
-      const tbody = row.parentNode;
-      
-      // Don't remove if it's the last row in the table
-      if (tbody.children.length > 1) {
-        row.remove();
-      } else {
-        // Clear the inputs instead
-        row.querySelectorAll('input').forEach(input => input.value = '');
-      }
-    }
+if point_loads_dl:
+    v = np.zeros_like(x_in)
+    for loc, p_dl in point_loads_dl:
+        a = loc * 12
+        P = p_dl * 1000  # lbs
+        for i, xi in enumerate(x_in):
+            v[i] += deflection_at_x(xi, a, P, L_in, EI=1)
+    max_def_EI1 = max(v)
+    EI_req = max_def_EI1 / delta_max if delta_max != 0 else 0.0
+else:
+    EI_req = 0.0
 
-    function analyzeBeam() {
-      // Get input values
-      const beamLength = parseFloat(document.getElementById('beamLength').value);
-      
-      // Get point loads from table
-      const pointLoads = [];
-      document.querySelectorAll('#pointLoadsBody tr').forEach(row => {
-        const location = parseFloat(row.querySelector('.point-location').value);
-        const magnitude = parseFloat(row.querySelector('.point-magnitude').value);
-        if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength && magnitude !== 0) {
-          pointLoads.push({location, magnitude: magnitude * 1000}); // Convert to pounds
-        }
-      });
+# Printout of the beam
+beam_visual_scale = max(int(L * 2), 1)
+print("Simply Supported Beam:")
+print("A" + "─" * beam_visual_scale + "B")
+for loc, pu in point_loads:
+    pos = int(loc / L * beam_visual_scale)
+    print(" " * pos + f"↓ Pu = {pu:.2f} kips")
 
-      // Get distributed loads from table
-      const distributedLoads = [];
-      document.querySelectorAll('#distributedLoadsBody tr').forEach(row => {
-        const start = parseFloat(row.querySelector('.dist-start').value);
-        const end = parseFloat(row.querySelector('.dist-end').value);
-        const magnitude = parseFloat(row.querySelector('.dist-magnitude').value);
-        if (!isNaN(start) && !isNaN(end) && !isNaN(magnitude) && start < end && end <= beamLength && magnitude !== 0) {
-          distributedLoads.push({start, end, magnitude: magnitude * 1000}); // Convert to pounds/ft
-        }
-      });
+# Results
+print(f"\nMu = {Mu:.2f} kip-ft")
+print(f"Vu = {Vu:.2f} kips")
+print(f"EI required = {EI_req:.2e} lb-in²")  # Scientific notation for large numbers
 
-      // Sort loads
-      pointLoads.sort((a, b) => a.location - b.location);
-      distributedLoads.sort((a, b) => a.start - b.start);
+# Graphical 3D visualization
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
 
-      // Calculate reactions
-      let R_left = 0, R_right = 0;
+# Draw beam
+ax.plot([0, L], [0, 0], [0, 0], color='blue', linewidth=5, label='Beam')
 
-      // Point load contributions
-      pointLoads.forEach(load => {
-        R_left += load.magnitude * (beamLength - load.location) / beamLength;
-        R_right += load.magnitude * load.location / beamLength;
-      });
+# Draw supports
+ax.plot([0, 0], [-0.5, 0.5], [0, 0], color='red', linewidth=3)
+ax.plot([L, L], [-0.5, 0.5], [0, 0], color='red', linewidth=3)
 
-      // Distributed load contributions
-      distributedLoads.forEach(load => {
-        const length = load.end - load.start;
-        const centroid = (load.start + load.end) / 2;
-        const totalLoad = load.magnitude * length;
-        R_left += totalLoad * (beamLength - centroid) / beamLength;
-        R_right += totalLoad * centroid / beamLength;
-      });
+# Draw point loads as arrows
+max_pu = max([pu for _, pu in point_loads] or [1])
+for loc, pu in point_loads:
+    arrow_length = pu / max_pu * 2  # Scale arrow length
+    ax.quiver(loc, 0, arrow_length, 0, 0, -arrow_length, color='green', arrow_length_ratio=0.2)
 
-      const Vu = Math.max(R_left, R_right) / 1000; // in kips
+ax.set_xlim([0, L])
+ax.set_ylim([-1, 1])
+ax.set_zlim([-2, 2])
+ax.set_xlabel('Length (ft)')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+ax.set_title('3D Beam Visualization')
+plt.show()
 
-      // Generate arrays for plotting
-      const numPoints = 1000;
-      const x = [];
-      const V = [];
-      const M = [];
-
-      for (let i = 0; i < numPoints; i++) {
-        const x_val = (i / (numPoints - 1)) * beamLength;
-        x.push(x_val);
-
-        // Calculate shear at this point
-        let V_val = R_left / 1000; // Start with left reaction
-
-        // Subtract point loads to the left
-        pointLoads.forEach(load => {
-          if (x_val > load.location) {
-            V_val -= load.magnitude / 1000;
-          }
-        });
-
-        // Subtract distributed loads
-        distributedLoads.forEach(load => {
-          if (x_val >= load.start && x_val <= load.end) {
-            V_val -= (load.magnitude * (x_val - load.start)) / 1000;
-          } else if (x_val > load.end) {
-            V_val -= (load.magnitude * (load.end - load.start)) / 1000;
-          }
-        });
-
-        V.push(V_val);
-
-        // Calculate moment (integrate shear)
-        let M_val = 0;
-        if (i > 0) {
-          const dx = x[i] - x[i-1];
-          M_val = M[i-1] + V[i-1] * dx;
-        }
-        M.push(M_val);
-      }
-
-      const Mu = Math.max(...M.map(Math.abs));
-
-      // Display results
-      displayResults(beamLength, pointLoads, distributedLoads, Mu, Vu, x, V, M);
-    }
-
-    function displayResults(beamLength, pointLoads, distributedLoads, Mu, Vu, x, V, M) {
-      // Show results section
-      document.getElementById('results').style.display = 'block';
-
-      // Create beam representation
-      let beamRep = 'Simply Supported Beam:\n';
-      beamRep += 'A' + '─'.repeat(Math.floor(beamLength * 2)) + 'B\n';
-      
-      pointLoads.forEach(load => {
-        const pos = Math.floor(load.location * 2);
-        beamRep += ' '.repeat(pos) + `↓ Pu = ${(load.magnitude/1000).toFixed(2)} kips\n`;
-      });
-
-      distributedLoads.forEach(load => {
-        const startPos = Math.floor(load.start * 2);
-        const length = Math.floor((load.end - load.start) * 2);
-        beamRep += ' '.repeat(startPos) + '═'.repeat(length) + ` w = ${(load.magnitude/1000).toFixed(2)} kips/ft\n`;
-      });
-
-      document.getElementById('beamRepresentation').textContent = beamRep;
-
-      // Display calculation results in cards
-      document.getElementById('momentValue').textContent = Mu.toFixed(2);
-      document.getElementById('shearValue').textContent = Vu.toFixed(2);
-
-      // Create enhanced Plotly diagram
-      const trace1 = {
-        x: x,
-        y: V,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Shear Force',
-        line: {
-          color: '#3498db',
-          width: 3
-        },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(52, 152, 219, 0.1)',
-        hovertemplate: '<b>Shear Force</b><br>Position: %{x:.2f} ft<br>Shear: %{y:.2f} kips<extra></extra>'
-      };
-
-      const trace2 = {
-        x: x,
-        y: M,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Bending Moment',
-        line: {
-          color: '#e74c3c',
-          width: 3
-        },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(231, 76, 60, 0.1)',
-        yaxis: 'y2',
-        hovertemplate: '<b>Bending Moment</b><br>Position: %{x:.2f} ft<br>Moment: %{y:.2f} kip-ft<extra></extra>'
-      };
-
-      const layout = {
-        title: {
-          text: 'Beam Analysis - Shear Force and Bending Moment Diagrams',
-          font: { size: 20, color: '#2c3e50' }
-        },
-        xaxis: {
-          title: { text: 'Position along beam (ft)', font: { size: 14 } },
-          gridcolor: '#ecf0f1',
-          zeroline: true,
-          zerolinecolor: '#bdc3c7',
-          zerolinewidth: 2
-        },
-        yaxis: {
-          title: { text: 'Shear Force (kips)', font: { size: 14, color: '#3498db' } },
-          side: 'left',
-          gridcolor: '#ecf0f1',
-          zeroline: true,
-          zerolinecolor: '#bdc3c7',
-          zerolinewidth: 2
-        },
-        yaxis2: {
-          title: { text: 'Bending Moment (kip-ft)', font: { size: 14, color: '#e74c3c' } },
-          side: 'right',
-          overlaying: 'y',
-          gridcolor: '#ecf0f1',
-          zeroline: true,
-          zerolinecolor: '#bdc3c7',
-          zerolinewidth: 2
-        },
-        height: 700,
-        plot_bgcolor: 'white',
-        paper_bgcolor: 'white',
-        font: { family: 'Segoe UI, sans-serif' },
-        legend: {
-          x: 1,
-          y: 1,
-          bgcolor: 'rgba(255,255,255,0.8)',
-          bordercolor: '#bdc3c7',
-          borderwidth: 1
-        },
-        margin: { l: 60, r: 60, t: 60, b: 60 }
-      };
-
-      Plotly.newPlot('plotlyDiv', [trace1, trace2], layout, {
-        responsive: true,
-        displayModeBar: true,
-        modeBarButtonsToRemove: ['select2d', 'lasso2d'],
-        displaylogo: false
-      });
-
-      // Scroll to results
-      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Add input event listeners for real-time validation
-    document.addEventListener('input', function(e) {
-      if (e.target.classList.contains('table-input')) {
-        const row = e.target.closest('tr');
-        const hasValues = Array.from(row.querySelectorAll('input')).some(input => input.value !== '');
-        
-        if (hasValues) {
-          row.classList.remove('empty-row');
-        } else {
-          row.classList.add('empty-row');
-        }
-      }
-    });
-
-    // Run initial analysis with default values
-    window.onload = function() {
-      analyzeBeam();
-    };
-  </script>
-</body>
-</html> 
+# Deflection calculation saved for later (not printed)

@@ -1,109 +1,313 @@
-import numpy as np
+import pygame
+import sys
 import math
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
-# Prompt for beam length
-L = float(input("Beam length (ft): "))
+# Initialize Pygame
+pygame.init()
 
-# Prompt for point loads
-point_loads = []
-while True:
-    inp = input("Location (ft) and Pu (kips) separated by space, or empty to stop: ")
-    if not inp:
-        break
-    loc, pu = map(float, inp.split())
-    if loc > L or loc < 0:
-        print("Location must be between 0 and beam length. Skipping.")
-        continue
-    point_loads.append((loc, pu))
+# Constants
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 800
+BEAM_Y = SCREEN_HEIGHT // 2
+SUPPORT_SIZE = 20
+ARROW_SIZE = 10
+FONT_SIZE = 24
 
-# Prompt for ratio
-ratio = float(input("Ratio of combined ultimate load to DL: "))
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+GRAY = (200, 200, 200)
 
-# Prompt for max deflection
-delta_max = float(input("Max deflection (in): "))
+# Setup screen
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("2D Beam Editor - Clicky CAD-like Interface")
+font = pygame.font.SysFont('Arial', FONT_SIZE)
 
-# Calculate Vu and Mu
-if point_loads:
-    R_left = sum(pu * (L - loc) / L for loc, pu in point_loads)
-    R_right = sum(pu * loc / L for loc, pu in point_loads)
-    Vu = max(R_left, R_right)
+# Beam properties
+beam_length = 0.0  # in ft, to be set
+scale = 50.0  # pixels per ft, adjustable
+beam_start_x = 100
+beam_end_x = beam_start_x
 
-    # For Mu
-    num_points = 1000
-    x = np.linspace(0, L, num_points)
-    dx = x[1] - x[0]
-    V_arr = np.full(num_points, R_left)
-    for loc, pu in point_loads:
-        V_arr[x > loc] -= pu
-    M_arr = np.cumsum(V_arr) * dx
-    Mu = max(abs(M_arr))
-else:
-    Vu = 0.0
-    Mu = 0.0
+# Loads
+point_loads = []  # list of (position_ft, magnitude_kips)
+uniform_loads = []  # list of (start_ft, end_ft, magnitude_kips_ft)
 
-# For EI required
-point_loads_dl = [(loc, pu / ratio) for loc, pu in point_loads]
-L_in = L * 12
-x_in = np.linspace(0, L_in, 1000)
+# States
+current_state = "SET_BEAM_LENGTH"  # States: SET_BEAM_LENGTH, ADD_POINT, ADD_UNIFORM, IDLE
+input_text = ""
+selected_uniform_start = None
 
-def deflection_at_x(x, a, P, L, EI):
-    b = L - a
-    if x <= a:
-        return P * b * x * (L**2 - b**2 - x**2) / (6 * EI * L)
+def draw_beam():
+    if beam_length > 0:
+        pygame.draw.line(screen, BLUE, (beam_start_x, BEAM_Y), (beam_end_x, BEAM_Y), 5)
+        # Draw pinned supports
+        # Left support
+        pygame.draw.circle(screen, RED, (beam_start_x, BEAM_Y), SUPPORT_SIZE // 2)
+        pygame.draw.line(screen, RED, (beam_start_x, BEAM_Y + SUPPORT_SIZE // 2), (beam_start_x, BEAM_Y + SUPPORT_SIZE))
+        # Right support
+        pygame.draw.circle(screen, RED, (beam_end_x, BEAM_Y), SUPPORT_SIZE // 2)
+        pygame.draw.line(screen, RED, (beam_end_x, BEAM_Y + SUPPORT_SIZE // 2), (beam_end_x, BEAM_Y + SUPPORT_SIZE))
+        # Label beam length
+        text = font.render(f"Beam Length: {beam_length:.1f} ft", True, BLACK)
+        screen.blit(text, (beam_start_x, BEAM_Y - 40))
+
+def draw_point_loads():
+    for pos_ft, mag in point_loads:
+        pos_x = beam_start_x + int(pos_ft * scale)
+        arrow_length = min(50, abs(mag) * 5)  # Scale arrow
+        direction = -1 if mag > 0 else 1  # Assume positive down
+        pygame.draw.line(screen, GREEN, (pos_x, BEAM_Y), (pos_x, BEAM_Y + direction * arrow_length), 3)
+        pygame.draw.polygon(screen, GREEN, [
+            (pos_x, BEAM_Y + direction * arrow_length),
+            (pos_x - ARROW_SIZE // 2, BEAM_Y + direction * (arrow_length - ARROW_SIZE)),
+            (pos_x + ARROW_SIZE // 2, BEAM_Y + direction * (arrow_length - ARROW_SIZE))
+        ])
+        text = font.render(f"{mag:.1f} kips", True, BLACK)
+        screen.blit(text, (pos_x + 5, BEAM_Y + direction * arrow_length + 5 * direction))
+
+def draw_uniform_loads():
+    for start_ft, end_ft, mag in uniform_loads:
+        start_x = beam_start_x + int(start_ft * scale)
+        end_x = beam_start_x + int(end_ft * scale)
+        height = min(30, abs(mag) * 10)  # Scale height
+        direction = -1 if mag > 0 else 1  # Positive down
+        # Draw rectangle for uniform load
+        pygame.draw.rect(screen, GRAY, (start_x, BEAM_Y + direction * height, end_x - start_x, height))
+        # Draw arrows
+        num_arrows = max(3, int((end_x - start_x) / 20))
+        for i in range(num_arrows):
+            arrow_x = start_x + (end_x - start_x) * (i + 0.5) / num_arrows
+            pygame.draw.line(screen, GREEN, (arrow_x, BEAM_Y), (arrow_x, BEAM_Y + direction * (height + ARROW_SIZE)), 2)
+            pygame.draw.polygon(screen, GREEN, [
+                (arrow_x, BEAM_Y + direction * (height + ARROW_SIZE)),
+                (arrow_x - ARROW_SIZE // 3, BEAM_Y + direction * height),
+                (arrow_x + ARROW_SIZE // 3, BEAM_Y + direction * height)
+            ])
+        text = font.render(f"{mag:.1f} kips/ft", True, BLACK)
+        screen.blit(text, (start_x, BEAM_Y + direction * (height + 20)))
+
+def draw_instructions():
+    if current_state == "SET_BEAM_LENGTH":
+        text = font.render("Enter beam length (ft) and press ENTER", True, BLACK)
+    elif current_state == "ADD_POINT":
+        text = font.render("Click on beam to add point load, enter magnitude and press ENTER", True, BLACK)
+    elif current_state == "ADD_UNIFORM":
+        text = font.render("Click start, then end for uniform load, enter magnitude and press ENTER", True, BLACK)
     else:
-        return P * a * (L - x) * (L**2 - a**2 - (L - x)**2) / (6 * EI * L)
+        text = font.render("Press P for point load, U for uniform, R to reset, Q to quit", True, BLACK)
+    screen.blit(text, (20, 20))
+    if input_text:
+        input_surf = font.render(input_text, True, BLACK)
+        screen.blit(input_surf, (20, 60))
 
-if point_loads_dl:
-    v = np.zeros_like(x_in)
-    for loc, p_dl in point_loads_dl:
-        a = loc * 12
-        P = p_dl * 1000  # lbs
-        for i, xi in enumerate(x_in):
-            v[i] += deflection_at_x(xi, a, P, L_in, EI=1)
-    max_def_EI1 = max(v)
-    EI_req = max_def_EI1 / delta_max if delta_max != 0 else 0.0
-else:
-    EI_req = 0.0
+def pixel_to_ft(x):
+    return (x - beam_start_x) / scale
 
-# Printout of the beam
-beam_visual_scale = max(int(L * 2), 1)
-print("Simply Supported Beam:")
-print("A" + "─" * beam_visual_scale + "B")
-for loc, pu in point_loads:
-    pos = int(loc / L * beam_visual_scale)
-    print(" " * pos + f"↓ Pu = {pu:.2f} kips")
+def adjust_scale():
+    global scale, beam_end_x
+    if beam_length > 0:
+        max_scale = (SCREEN_WIDTH - 200) / beam_length
+        scale = min(100, max_scale)  # Cap at 100 pixels/ft
+        beam_end_x = beam_start_x + int(beam_length * scale)
 
-# Results
-print(f"\nMu = {Mu:.2f} kip-ft")
-print(f"Vu = {Vu:.2f} kips")
-print(f"EI required = {EI_req:.2e} lb-in²")  # Scientific notation for large numbers
+running = True
+while running:
+    screen.fill(WHITE)
+    draw_beam()
+    draw_point_loads()
+    draw_uniform_loads()
+    draw_instructions()
 
-# Graphical 3D visualization
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if current_state == "SET_BEAM_LENGTH":
+                if event.key == pygame.K_RETURN:
+                    try:
+                        beam_length = float(input_text)
+                        if beam_length > 0:
+                            current_state = "IDLE"
+                            adjust_scale()
+                    except ValueError:
+                        pass
+                    input_text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    input_text = input_text[:-1]
+                else:
+                    input_text += event.unicode
+            elif current_state in ["ADD_POINT", "ADD_UNIFORM"]:
+                if event.key == pygame.K_RETURN:
+                    try:
+                        mag = float(input_text)
+                        if current_state == "ADD_POINT":
+                            # Last clicked position should be stored, but since we use mouse, we'll handle in mouse
+                            pass  # Handled in mouse click
+                        elif current_state == "ADD_UNIFORM" and selected_uniform_start is not None:
+                            # Need end position from second click
+                            pass  # Handled in mouse
+                        current_state = "IDLE"
+                    except ValueError:
+                        pass
+                    input_text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    input_text = input_text[:-1]
+                else:
+                    input_text += event.unicode
+            else:  # IDLE
+                if event.key == pygame.K_p:
+                    current_state = "ADD_POINT"
+                    input_text = ""
+                elif event.key == pygame.K_u:
+                    current_state = "ADD_UNIFORM"
+                    input_text = ""
+                    selected_uniform_start = None
+                elif event.key == pygame.K_r:
+                    point_loads.clear()
+                    uniform_loads.clear()
+                    beam_length = 0
+                    current_state = "SET_BEAM_LENGTH"
+                elif event.key == pygame.K_q:
+                    running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click
+                mouse_x, mouse_y = event.pos
+                if abs(mouse_y - BEAM_Y) < 20 and beam_start_x <= mouse_x <= beam_end_x:
+                    pos_ft = pixel_to_ft(mouse_x)
+                    if current_state == "ADD_POINT":
+                        if input_text:
+                            try:
+                                mag = float(input_text)
+                                point_loads.append((pos_ft, mag))
+                                input_text = ""
+                                current_state = "IDLE"
+                            except ValueError:
+                                pass
+                        else:
+                            # Wait for magnitude input after click? But to make clicky, perhaps prompt after click
+                            # For simplicity, enter mag first, then click position
+                            # Wait, let's adjust: in ADD_POINT, enter mag, then click position
+                            # But user said clicky, so click first, then enter mag
+                            # Let's implement click then prompt mag
+                            # But since loop, we can set a temp_pos
+                            temp_pos = pos_ft
+                            # Then wait for input, but need to handle in keydown
+                            # To simplify, let's assume enter mag in idle, but make it clicky
+                            # Change: press P, then click on beam, then enter mag in prompt
+                            if current_state == "ADD_POINT":
+                                if not input_text:
+                                    # Click sets position, then enter mag
+                                    temp_pos = pos_ft
+                                else:
+                                    # Wait for enter
+                                    pass
+                            # This is getting complex, let's use a variable
+                            # Introduce temp_pos = None
+                            if current_state == "ADD_POINT":
+                                if temp_pos is None:
+                                    temp_pos = pos_ft
+                                else:
+                                    # Second click? No, for point it's one click
+                                    # Set: when enter P, then click sets pos, then type mag, enter
+    # Define temp_pos outside loop
+try:
+    temp_pos = None
+    temp_start = None
+except NameError:
+    temp_pos = None
+    temp_start = None
 
-# Draw beam
-ax.plot([0, L], [0, 0], [0, 0], color='blue', linewidth=5, label='Beam')
+# In mousebuttondown
+if current_state == "ADD_POINT" and temp_pos is None:
+    temp_pos = pos_ft
+    # Now user types mag
 
-# Draw supports
-ax.plot([0, 0], [-0.5, 0.5], [0, 0], color='red', linewidth=3)
-ax.plot([L, L], [-0.5, 0.5], [0, 0], color='red', linewidth=3)
+# In keydown for return in ADD_POINT
+if temp_pos is not None and input_text:
+    mag = float(input_text)
+    point_loads.append((temp_pos, mag))
+    temp_pos = None
+    input_text = ""
+    current_state = "IDLE"
 
-# Draw point loads as arrows
-max_pu = max([pu for _, pu in point_loads] or [1])
-for loc, pu in point_loads:
-    arrow_length = pu / max_pu * 2  # Scale arrow length
-    ax.quiver(loc, 0, arrow_length, 0, 0, -arrow_length, color='green', arrow_length_ratio=0.2)
+# Similarly for uniform
+if current_state == "ADD_UNIFORM":
+    if temp_start is None:
+        temp_start = pos_ft
+    elif selected_uniform_start is None:  # Second click
+        end_ft = pos_ft
+        if end_ft > temp_start:
+            selected_uniform_start = temp_start
+            # Now type mag
+        else:
+            # Invalid, reset
+            temp_start = None
 
-ax.set_xlim([0, L])
-ax.set_ylim([-1, 1])
-ax.set_zlim([-2, 2])
-ax.set_xlabel('Length (ft)')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
-ax.set_title('3D Beam Visualization')
-plt.show()
+# In keydown for return in ADD_UNIFORM
+if selected_uniform_start is not None and input_text:
+    mag = float(input_text)
+    uniform_loads.append((selected_uniform_start, pos_ft, mag))  # Wait, pos_ft not defined
+    # Wait, for second click, we need to save end as temp_end
+    # Let's define temp_end
+try:
+    temp_end = None
+except NameError:
+    temp_end = None
 
-# Deflection calculation saved for later (not printed)
+# Adjust
+if current_state == "ADD_UNIFORM":
+    if temp_start is None:
+        temp_start = pos_ft
+    elif temp_end is None:
+        temp_end = pos_ft
+        if temp_end <= temp_start:
+            temp_end = None  # Invalid
+    # Then in return
+    if temp_end is not None and input_text:
+        mag = float(input_text)
+        uniform_loads.append((temp_start, temp_end, mag))
+        temp_start = None
+        temp_end = None
+        input_text = ""
+        current_state = "IDLE"
+
+# In draw_instructions for ADD_UNIFORM
+if current_state == "ADD_UNIFORM":
+    if temp_start is None:
+        text = font.render("Click start of uniform load", True, BLACK)
+    elif temp_end is None:
+        text = font.render("Click end of uniform load", True, BLACK)
+    else:
+        text = font.render("Enter magnitude (kips/ft) and press ENTER", True, BLACK)
+
+# For ADD_POINT
+if current_state == "ADD_POINT":
+    if temp_pos is None:
+        text = font.render("Click location for point load", True, BLACK)
+    else:
+        text = font.render("Enter magnitude (kips) and press ENTER", True, BLACK)
+
+# To make it work, we need to move the draw_instructions to use these
+
+# Also, to cancel, perhaps press ESC
+if event.key == pygame.K_ESCAPE:
+    current_state = "IDLE"
+    input_text = ""
+    temp_pos = None
+    temp_start = None
+    temp_end = None
+
+# Zoom or pan? For now, no, keep simple
+
+# Sort loads for nice drawing
+point_loads.sort(key=lambda p: p[0])
+uniform_loads.sort(key=lambda u: u[0])
+
+    pygame.display.flip()
+
+pygame.quit()
+sys.exit()

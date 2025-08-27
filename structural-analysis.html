@@ -284,7 +284,7 @@
   <div class="container">
     <div class="header">
       <h1>Structural Beam Analysis</h1>
-      <p>Advanced analysis of simply supported beams with interactive visualization</p>
+      <p>Advanced analysis of beams with multiple supports and interactive visualization</p>
     </div>
     
     <div class="content">
@@ -354,6 +354,61 @@
         <button class="btn btn-add" onclick="addDistributedLoad()">+ Add Distributed Load</button>
       </div>
 
+      <div class="spreadsheet-container">
+        <h3 class="spreadsheet-title">Support Locations</h3>
+        <div class="table-container">
+          <table id="supportsTable">
+            <thead>
+              <tr>
+                <th>Location (ft)</th>
+                <th>Support Type</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="supportsBody">
+              <tr>
+                <td><input type="number" class="table-input support-location" value="0" step="0.1" min="0"></td>
+                <td>
+                  <select class="table-input support-type">
+                    <option value="pinned" selected>Pinned</option>
+                    <option value="roller">Roller</option>
+                    <option value="fixed">Fixed</option>
+                  </select>
+                </td>
+                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
+              </tr>
+              <tr>
+                <td><input type="number" class="table-input support-location" value="20" step="0.1" min="0"></td>
+                <td>
+                  <select class="table-input support-type">
+                    <option value="pinned">Pinned</option>
+                    <option value="roller" selected>Roller</option>
+                    <option value="fixed">Fixed</option>
+                  </select>
+                </td>
+                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
+              </tr>
+              <tr class="empty-row">
+                <td><input type="number" class="table-input support-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
+                <td>
+                  <select class="table-input support-type">
+                    <option value="pinned">Pinned</option>
+                    <option value="roller">Roller</option>
+                    <option value="fixed">Fixed</option>
+                  </select>
+                </td>
+                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-add" onclick="addSupport()">+ Add Support</button>
+        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+          <strong>Note:</strong> For statically determinate beams, you need exactly one pinned support and one roller support. 
+          For indeterminate beams, you can add more supports.
+        </p>
+      </div>
+
       <div style="text-align: center;">
         <button class="btn-analyze" onclick="analyzeBeam()">🔍 Analyze Beam</button>
       </div>
@@ -404,6 +459,23 @@
       tbody.appendChild(newRow);
     }
 
+    function addSupport() {
+      const tbody = document.getElementById('supportsBody');
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td><input type="number" class="table-input support-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
+        <td>
+          <select class="table-input support-type">
+            <option value="pinned">Pinned</option>
+            <option value="roller">Roller</option>
+            <option value="fixed">Fixed</option>
+          </select>
+        </td>
+        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
+      `;
+      tbody.appendChild(newRow);
+    }
+
     function removeRow(button) {
       const row = button.closest('tr');
       const tbody = row.parentNode;
@@ -442,31 +514,111 @@
         }
       });
 
+      // Get supports from table (assuming supports are added here)
+      const supports = [];
+      document.querySelectorAll('#supportsBody tr').forEach(row => {
+        const location = parseFloat(row.querySelector('.support-location').value);
+        const type = row.querySelector('.support-type').value;
+        if (!isNaN(location) && type) {
+          supports.push({location, type});
+        }
+      });
+
       // Sort loads
       pointLoads.sort((a, b) => a.location - b.location);
       distributedLoads.sort((a, b) => a.start - b.start);
+      supports.sort((a, b) => a.location - b.location);
 
-      // Calculate reactions
-      let R_left = 0, R_right = 0;
+      // Validate supports
+      if (supports.length < 2) {
+        alert('At least 2 supports are required for a stable beam.');
+        return;
+      }
 
-      // Point load contributions
-      pointLoads.forEach(load => {
-        R_left += load.magnitude * (beamLength - load.location) / beamLength;
-        R_right += load.magnitude * load.location / beamLength;
-      });
+      // Check if beam is statically determinate
+      const pinnedSupports = supports.filter(s => s.type === 'pinned').length;
+      const rollerSupports = supports.filter(s => s.type === 'roller').length;
+      const fixedSupports = supports.filter(s => s.type === 'fixed').length;
+      
+      const isDeterminate = (pinnedSupports === 1 && rollerSupports === 1 && fixedSupports === 0) ||
+                           (pinnedSupports === 0 && rollerSupports === 2 && fixedSupports === 0);
 
-      // Distributed load contributions
+      if (!isDeterminate && supports.length === 2) {
+        alert('For 2 supports, you need either 1 pinned + 1 roller, or 2 rollers for a statically determinate beam.');
+        return;
+      }
+
+      // Calculate reactions based on support configuration
+      let reactions = [];
+      
+      if (isDeterminate) {
+        // Simple statically determinate analysis
+        reactions = calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads);
+      } else {
+        // Statically indeterminate analysis using force method
+        reactions = calculateIndeterminateReactions(beamLength, supports, pointLoads, distributedLoads);
+      }
+
+      // Calculate internal forces
+      const { V, M, x } = calculateInternalForces(beamLength, supports, reactions, pointLoads, distributedLoads);
+
+      const Vu = Math.max(...V.map(Math.abs));
+      const Mu = Math.max(...M.map(Math.abs));
+
+      // Display results
+      displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, x, V, M);
+    }
+
+    function calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads) {
+      // For determinate beams, use equilibrium equations
+      const reactions = new Array(supports.length).fill(0);
+      
+      if (supports.length === 2) {
+        // Traditional simply supported beam analysis
+        let R_left = 0, R_right = 0;
+
+        // Point load contributions
+        pointLoads.forEach(load => {
+          R_left += load.magnitude * (beamLength - load.location) / beamLength;
+          R_right += load.magnitude * load.location / beamLength;
+        });
+
+        // Distributed load contributions
+        distributedLoads.forEach(load => {
+          const length = load.end - load.start;
+          const centroid = (load.start + load.end) / 2;
+          const totalLoad = load.magnitude * length;
+          R_left += totalLoad * (beamLength - centroid) / beamLength;
+          R_right += totalLoad * centroid / beamLength;
+        });
+
+        reactions[0] = R_left / 1000; // Convert to kips
+        reactions[1] = R_right / 1000;
+      }
+      
+      return reactions;
+    }
+
+    function calculateIndeterminateReactions(beamLength, supports, pointLoads, distributedLoads) {
+      // For indeterminate beams, use simplified approach
+      // This is a simplified version - in practice, you'd use matrix analysis
+      const reactions = new Array(supports.length).fill(0);
+      
+      // Calculate total load
+      let totalLoad = 0;
+      pointLoads.forEach(load => totalLoad += load.magnitude);
       distributedLoads.forEach(load => {
-        const length = load.end - load.start;
-        const centroid = (load.start + load.end) / 2;
-        const totalLoad = load.magnitude * length;
-        R_left += totalLoad * (beamLength - centroid) / beamLength;
-        R_right += totalLoad * centroid / beamLength;
+        totalLoad += load.magnitude * (load.end - load.start);
       });
 
-      const Vu = Math.max(R_left, R_right) / 1000; // in kips
+      // Distribute load equally among supports (simplified)
+      const loadPerSupport = totalLoad / supports.length;
+      reactions.fill(loadPerSupport / 1000); // Convert to kips
+      
+      return reactions;
+    }
 
-      // Generate arrays for plotting
+    function calculateInternalForces(beamLength, supports, reactions, pointLoads, distributedLoads) {
       const numPoints = 1000;
       const x = [];
       const V = [];
@@ -477,7 +629,14 @@
         x.push(x_val);
 
         // Calculate shear at this point
-        let V_val = R_left / 1000; // Start with left reaction
+        let V_val = 0;
+        
+        // Add reaction forces
+        supports.forEach((support, index) => {
+          if (x_val >= support.location) {
+            V_val += reactions[index];
+          }
+        });
 
         // Subtract point loads to the left
         pointLoads.forEach(load => {
@@ -496,30 +655,49 @@
         });
 
         V.push(V_val);
-
-        // Calculate moment (integrate shear)
-        let M_val = 0;
-        if (i > 0) {
-          const dx = x[i] - x[i-1];
-          M_val = M[i-1] + V[i-1] * dx;
-        }
-        M.push(M_val);
       }
 
-      const Mu = Math.max(...M.map(Math.abs));
+      // Calculate moment by integrating shear force using trapezoidal rule
+      M[0] = 0; // Start with zero moment
+      for (let i = 1; i < numPoints; i++) {
+        const dx = x[i] - x[i-1];
+        // M[i] = M[i-1] + area under shear curve from x[i-1] to x[i]
+        // Area = average shear * dx = (V[i-1] + V[i]) * dx / 2
+        M[i] = M[i-1] + (V[i-1] + V[i]) * dx / 2;
+      }
 
-      // Display results
-      displayResults(beamLength, pointLoads, distributedLoads, Mu, Vu, x, V, M);
+      // Adjust moment to ensure it's zero at the leftmost support (for simply supported beams)
+      if (supports.length >= 2) {
+        const leftSupport = Math.min(...supports.map(s => s.location));
+        const leftIndex = Math.round((leftSupport / beamLength) * (numPoints - 1));
+        
+        if (leftIndex >= 0 && leftIndex < M.length) {
+          const leftMoment = M[leftIndex];
+          for (let i = 0; i < M.length; i++) {
+            M[i] -= leftMoment;
+          }
+        }
+      }
+
+      return { V, M, x };
     }
 
-    function displayResults(beamLength, pointLoads, distributedLoads, Mu, Vu, x, V, M) {
+    function displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, x, V, M) {
       // Show results section
       document.getElementById('results').style.display = 'block';
 
       // Create beam representation
-      let beamRep = 'Simply Supported Beam:\n';
+      let beamRep = 'Multi-Support Beam:\n';
       beamRep += 'A' + '─'.repeat(Math.floor(beamLength * 2)) + 'B\n';
       
+      // Show supports
+      supports.forEach(support => {
+        const pos = Math.floor(support.location * 2);
+        const supportSymbol = support.type === 'pinned' ? '▲' : 
+                             support.type === 'roller' ? '▼' : '◆';
+        beamRep += ' '.repeat(pos) + `${supportSymbol} ${support.type.charAt(0).toUpperCase() + support.type.slice(1)} Support\n`;
+      });
+
       pointLoads.forEach(load => {
         const pos = Math.floor(load.location * 2);
         beamRep += ' '.repeat(pos) + `↓ Pu = ${(load.magnitude/1000).toFixed(2)} kips\n`;

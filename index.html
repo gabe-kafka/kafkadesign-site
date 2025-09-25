@@ -37,8 +37,7 @@
 <li><a href="#structural_terminal" id="toc-structural_terminal">Structural Terminal (beta) </a></li>
 <li><a href="#python_notebooks" id="toc-python_notebooks">Python Notebooks</a></li>
 </nav>
-<li><a href="structural-terminal.html">Structural Terminal</a></li>
-<h2 id="structural_terminal">Structural Terminal</h2>
+<h2 id="structural_terminal"><a href="/structural-terminal.html">Structural Terminal</a></h2>
 <p>This is my attempt at a structural design "terminal". When I was designing wood framed 
   buildings in Boston there were maybe 10 resources I wanted to be able to access from one place as quickly 
   as possible. 
@@ -170,14 +169,10 @@ Pyramid of Khafre
 </table>
 <p>Note that only one column is allowed to grow.</p>
 <h2 id="forms">Forms</h2>
-<p>Here are some buttons:</p>
+<p>Navigate to tools:</p>
 <nav>
-<button>
-Reset
-</button>
-<button>
-Save
-</button>
+<a href="structural-terminal.html" style="display: inline-block; padding: 0.5em 1em; border: 1px solid; text-decoration: none; margin-right: 0.5em;">Structural Terminal</a>
+<a href="structural-analysis.html" style="display: inline-block; padding: 0.5em 1em; border: 1px solid; text-decoration: none;">Structural Analysis</a>
 </nav>
 <p>And inputs:</p>
 <form class="grid">
@@ -305,5 +300,13 @@ href="https://x.com/usgraphics">U.S. Graphics Company</a> for all the
 inspiration.</p>
   <div class="debug-grid"></div>
   <script src="src/index.js"></script>
+  <script>
+    // Add click handlers to navigation buttons
+    document.addEventListener('DOMContentLoaded', function() {
+      const buttons = document.querySelectorAll('nav a');
+      buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.location
 </body>
 </html>

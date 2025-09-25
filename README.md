@@ -1,25 +1,29 @@
-# Streamlit Testing Application
+# The Monospace Web
 
-This is a simple Streamlit application that demonstrates fetching stock data using yfinance.
+Monospace fonts are dear to many of us. Some find them more readable, consistent, and beautiful, than their proportional alternatives. Maybe we’re just brainwashed from spending years in terminals? Or are we hopelessly nostalgic? I’m not sure. But I like them, and that’s why I started experimenting with all-monospace Web.
 
-## Setup
+https://owickstrom.github.io/the-monospace-web/
 
-1. Create a virtual environment (recommended):
-```bash
-python -m venv venv
-source venv/bin/activate  # On macOS/Linux
+## Install
+
+```
+npm install @owickstrom/the-monospace-web
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
+## Usage
+
+```html
+<link rel="stylesheet" href="node_modules/@owickstrom/the-monospace-web/dist/reset.css">
+<link rel="stylesheet" href="node_modules/@owickstrom/the-monospace-web/dist/index.css">
 ```
 
-## Running the Application
+## Build
 
-To run the application, use:
-```bash
-streamlit run testing-streamlit.py
+```
+nix develop # or `direnv allow .`
+make
 ```
 
-The application will open in your default web browser at `http://localhost:8501`.
+## License
+
+[MIT](LICENSE.md)

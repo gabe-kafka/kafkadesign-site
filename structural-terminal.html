@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Structural Terminal</title>
+  <style>
+    /* Basic "dark terminal" styling – adjust to taste */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Menlo, Consolas, Monaco, monospace;
+      background-color: #1e1e1e;
+      color: #ffffff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #terminalOutput {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      border-bottom: 1px solid #333;
+    }
+
+    #terminalInput {
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: #252526;
+      color: #c5c5c5;
+      border: none;
+      border-top: 1px solid #333;
+      outline: none;
+    }
+
+    #terminalInput:disabled {
+      color: #555;
+      background-color: #2d2d2d;
+    }
+
+    .prompt-line {
+      display: flex;
+      align-items: center;
+    }
+
+    .prompt-line > span.prompt-symbol {
+      margin-right: 6px;
+      color: #00ff00; /* green ">" */
+    }
+
+    .output-line {
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      color: #cccccc;
+    }
+
+    .error {
+      color: #f44747; /* red */
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Input field: disabled until both JSONs load -->
+  <input
+    type="text"
+    id="terminalInput"
+    placeholder="(Loading…)"
+    disabled
+    autocomplete="off"
+  />
+
+  <!-- Instruction for commands -->
+  <div id="instructionText" style="position: absolute; top: 8px; right: 12px; padding: 4px 12px; color: #aaaaaa; font-size: 0.9rem;">
+    <div><code>&lt;member&gt; &lt;command&gt;</code> &nbsp;&nbsp; Ex: <code>W12X16 LR</code></div>
+    <table style="margin-top:4px; border-collapse: collapse; width: 100%; color: #aaaaaa; font-size: 0.9rem;">
+      <tr>
+        <th style="text-align: left; padding: 2px 6px;">Command</th>
+        <th style="text-align: left; padding: 2px 6px;">Description</th>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>LR</code></td>
+        <td style="padding: 2px 6px;">Residual length limit (Lr) - Steel only</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>LP</code></td>
+        <td style="padding: 2px 6px;">Plastic length limit (Lp) - Steel only</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>spf 2x12</code></td>
+        <td style="padding: 2px 6px;">SPF wood V, M values</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px;"><code>vals</code></td>
+        <td style="padding: 2px 6px;">Calculate V, M, EI values</td>
+      </tr>
+    </table>
+
+    <table style="margin-top:8px; border-collapse: collapse; width: 100%; color: #aaaaaa; font-size: 0.9rem;">
+      <tr>
+        <td style="padding: 2px 6px;"><strong>Available design values</strong></td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 10px;">steel shapes</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 20px;">&bull; w members</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 20px;">&bull; mc</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 10px;"><strong>wood</strong></td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 20px;">&bull; spf no2</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 20px;">&bull; lvl</td>
+      </tr>
+      <tr>
+        <td style="padding: 2px 6px; padding-left: 10px;"><strong>get V, M, EI by typing &quot;vals&quot;</strong></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Interactive prompt area (for Fy and c) -->
+  <div id="interactivePrompt" style="padding: 4px 12px; color: #00ff00;"></div>
+
+  <!-- Output area -->
+  <div id="terminalOutput">
+    <!-- Initial "loading" message: -->
+    <div class="prompt-line loading">
+      <span class="prompt-symbol">&gt;</span>
+      <span>Loading data…</span>
+    </div>
+  </div>
+
+  <!-- All JavaScript lives here -->
+  <script>
+    // ------------------------------------------------------------------------
+    // 1) Variables to hold loaded JSON data and "loaded" flags:
+    // ------------------------------------------------------------------------
+    let wShapeData = null;
+    let mcShapeData = null;
+    let spfWoodData = null;
+    let lvlWoodData = null;
+    let wShapeLoaded = false;
+    let mcShapeLoaded = false;
+    let spfWoodLoaded = false;
+    let lvlWoodLoaded = false;
+
+    // Variables for Lr calculation state
+    let lrState = null;       // null | "awaitingFy" | "awaitingC"
+    let lrShapeObj = null;
+    const lrE = 29000;        // default E (ksi)
+    let lrFy = null;
+
+    // Variables for Lp calculation state
+    let lpState = null;       // null or "awaitingFyLP"
+    let lpShapeObj = null;
+    const lpE = 29000;        // default E (ksi) for LP
+
+    // Variables for Vals calculation state
+    let valsState = null;     // null | "awaitingW" | "awaitingWLL" | "awaitingL" | "awaitingDeflection"
+    let valsW = null;
+    let valsWLL = null;
+    let valsL = null;
+    let valsDeflection = null;
+
+    // ------------------------------------------------------------------------
+    // 2) Utility: print a new line of text into #terminalOutput
+    //    - argument `text` can be a string (plain text) or
+    //      an HTML-formatted string if you want color, etc.
+    // ------------------------------------------------------------------------
+    function printLine(text, cssClass = "output-line") {
+      const outDiv = document.getElementById("terminalOutput");
+      const line = document.createElement("div");
+      line.className = cssClass;
+      line.innerText = text;
+      outDiv.appendChild(line);
+
+      // Scroll to bottom whenever a new line is printed
+      outDiv.scrollTop = outDiv.scrollHeight;
+    }
+
+    // ------------------------------------------------------------------------
+    // 3) After BOTH JSONs have loaded, enable the input:
+    // ------------------------------------------------------------------------
+    function tryEnableInput() {
+      if (wShapeLoaded && mcShapeLoaded && spfWoodLoaded && lvlWoodLoaded) {
+        const input = document.getElementById("terminalInput");
+        input.disabled = false;
+        input.placeholder = "Search a shape (e.g. W12X16, spf 2x12, lvl)...";
+        input.focus();
+
+        // Remove the initial "Loading data..." line:
+        document.getElementById("terminalOutput").innerHTML = "";
+        // Print a welcome message now that data is available:
+        printLine("> Data loaded. Type a shape name and press Enter.");
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 4) Fetch W-section JSON
+    // ------------------------------------------------------------------------
+    fetch("js/w-member-data.json")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`W JSON HTTP ${resp.status}`);
+        return resp.json();
+      })
+      .then((json) => {
+        wShapeData = json;
+        wShapeLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading W JSON:", err);
+        // Show an error on screen:
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load W-member JSON.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 5) Fetch MC-section JSON
+    // ------------------------------------------------------------------------
+    fetch("js/mc-member-data.json")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`MC JSON HTTP ${resp.status}`);
+        return resp.json();
+      })
+      .then((json) => {
+        mcShapeData = json;
+        mcShapeLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading MC JSON:", err);
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load MC-member JSON.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 6) Fetch SPF wood data from CSV
+    // ------------------------------------------------------------------------
+    fetch("assets/data/spf1and2-design-values.csv")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`SPF CSV HTTP ${resp.status}`);
+        return resp.text();
+      })
+      .then((csvText) => {
+        // Parse CSV data
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        spfWoodData = {};
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const shape = values[0];
+          spfWoodData[shape] = {
+            "Shape": shape,
+            "V": values[1],
+            "M": values[2],
+            "EI": values[3] || "N/A" // Handle EI column if it exists
+          };
+        }
+        
+        spfWoodLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading SPF CSV:", err);
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load SPF wood data.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 7) Fetch LVL wood data from CSV
+    // ------------------------------------------------------------------------
+    fetch("assets/data/lvl-design-values.csv")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`LVL CSV HTTP ${resp.status}`);
+        return resp.text();
+      })
+      .then((csvText) => {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        lvlWoodData = []; // Use an array for LVL since names are not unique keys
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          let entry = {};
+          headers.forEach((header, index) => {
+            if(header) entry[header] = values[index];
+          });
+          lvlWoodData.push(entry);
+        }
+        
+        lvlWoodLoaded = true;
+        tryEnableInput();
+      })
+      .catch((err) => {
+        console.error("❌ Error loading LVL CSV:", err);
+        document.getElementById("terminalOutput").innerHTML = "";
+        printLine("Error: Could not load LVL wood data.", "error");
+      });
+
+    // ------------------------------------------------------------------------
+    // 8) Handle "Enter" key presses in the input
+    // ------------------------------------------------------------------------
+    document
+      .getElementById("terminalInput")
+      .addEventListener("keydown", function (evt) {
+        if (evt.key === "Enter") {
+          const rawValue = this.value.trim().toUpperCase();
+          this.value = ""; // clear input
+          if (!rawValue) return;
+
+          // Print the prompt line with the user's request
+          printLine(`> ${rawValue}`, "prompt-line");
+
+          // ----- Lp state machine -----
+          // If waiting for Fy for LP, parse it and compute Lp:
+          if (lpState === "awaitingFyLP") {
+            const fyVal = parseFloat(rawValue);
+            if (isNaN(fyVal) || fyVal <= 0) {
+              printLine("❌ Please enter a valid numeric Fy.", "error");
+              return;
+            }
+            // Compute Lp via Lp = 1.76 * r_y * sqrt(E/Fy)
+            const shapeObj = lpShapeObj;
+            const ry = parseFloat(shapeObj["ry"]);
+            const Lp_in = 1.76 * ry * Math.sqrt(lpE / fyVal);
+            const Lp_ft = Lp_in / 12;
+            printLine(`Lp = ${Lp_ft.toFixed(2)} ft (for Fy=${fyVal})`);
+            // Clear prompt and reset Lp state
+            document.getElementById("interactivePrompt").innerText = "";
+            lpState = null;
+            lpShapeObj = null;
+            return;
+          }
+          // ----- End Lp state machine -----
+
+          // ----- Vals state machine -----
+          // If waiting for w (total distributed load in plf):
+          if (valsState === "awaitingW") {
+            const wVal = parseFloat(rawValue);
+            if (isNaN(wVal) || wVal <= 0) {
+              printLine("❌ Please enter a valid numeric w (total distributed load in plf).", "error");
+              return;
+            }
+            valsW = wVal;
+            valsState = "awaitingWLL";
+            document.getElementById("interactivePrompt").innerText = "Enter w_LL (distributed live load in plf):";
+            return;
+          }
+
+          // If waiting for w_LL (distributed live load in plf):
+          if (valsState === "awaitingWLL") {
+            const wllVal = parseFloat(rawValue);
+            if (isNaN(wllVal) || wllVal <= 0) {
+              printLine("❌ Please enter a valid numeric w_LL (distributed live load in plf).", "error");
+              return;
+            }
+            valsWLL = wllVal;
+            valsState = "awaitingL";
+            document.getElementById("interactivePrompt").innerText = "Enter L (length in feet):";
+            return;
+          }
+
+          // If waiting for L (span length):
+          if (valsState === "awaitingL") {
+            const lVal = parseFloat(rawValue);
+            if (isNaN(lVal) || lVal <= 0) {
+              printLine("❌ Please enter a valid numeric L (length in feet).", "error");
+              return;
+            }
+            valsL = lVal;
+            valsState = "awaitingDeflection";
+            document.getElementById("interactivePrompt").innerText = "Enter max deflection, delta (inches):";
+            return;
+          }
+
+          // If waiting for max deflection:
+          if (valsState === "awaitingDeflection") {
+            const deflectionVal = parseFloat(rawValue);
+            if (isNaN(deflectionVal) || deflectionVal <= 0) {
+              printLine("❌ Please enter a valid numeric max deflection, delta (inches).", "error");
+              return;
+            }
+            valsDeflection = deflectionVal;
+            
+            // Calculate V, M using total w, EI using w_LL
+            const V = valsW * valsL / 2;
+            const M = (valsW * Math.pow(valsL, 2)) / 8;
+            // Convert units for EI calculation (use w_LL)
+            const wll_in = valsWLL / 12; // plf to lb/in
+            const L_in = valsL * 12; // ft to in
+            // EI = (5 * w_LL * L^4) / (384 * delta), all in inches and lb/in
+            const EI = (5 * wll_in * Math.pow(L_in, 4)) / (384 * valsDeflection);
+            const EI_formatted = (EI / 1000000).toFixed(2); // Convert to 10^6 format
+
+            // Create a table for V, M, EI
+            const outDiv = document.getElementById("terminalOutput");
+            const table = document.createElement('table');
+            table.style.marginTop = '8px';
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '320px';
+
+            // Table header
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            ["Variable", "Value", "Units"].forEach(text => {
+              const th = document.createElement('th');
+              th.textContent = text;
+              th.style.textAlign = 'left';
+              th.style.padding = '4px 8px';
+              th.style.borderBottom = '1px solid #555';
+              headerRow.appendChild(th);
+            });
+
+            // Table body
+            const tbody = table.createTBody();
+            const rows = [
+              ["V", V.toFixed(2), "lbs"],
+              ["M", M.toFixed(2), "ft-lbs"],
+              ["EI", EI_formatted, "(10^6) in-lb2"]
+            ];
+            rows.forEach(rowVals => {
+              const row = tbody.insertRow();
+              rowVals.forEach(val => {
+                const cell = row.insertCell();
+                cell.textContent = val;
+                cell.style.padding = '4px 8px';
+              });
+            });
+            outDiv.appendChild(table);
+
+            // Add Copy to Excel button for V, M, EI results
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => {
+              const header = "Variable\tValue\tUnits";
+              const lines = [
+                `V\t${V.toFixed(2)}\tlbs`,
+                `M\t${M.toFixed(2)}\tft-lbs`,
+                `EI\t${EI_formatted}\t(10^6) in-lb2`
+              ];
+              const text = [header, ...lines].join("\n");
+              const textarea = document.createElement("textarea");
+              textarea.value = text;
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textarea);
+              printLine("(Copied to clipboard)", "loading");
+            };
+            outDiv.appendChild(btn);
+
+            // Clear prompt and reset vals state
+            document.getElementById("interactivePrompt").innerText = "";
+            valsState = null;
+            valsW = null;
+            valsWLL = null;
+            valsL = null;
+            valsDeflection = null;
+            return;
+          }
+          // ----- End Vals state machine -----
+
+          // ----- Lr state machine -----
+          // If we're waiting for Fy, parse it now:
+          if (lrState === "awaitingFy") {
+            const fyVal = parseFloat(rawValue);
+            if (isNaN(fyVal) || fyVal <= 0) {
+              printLine("❌ Please enter a valid numeric Fy.", "error");
+              return;
+            }
+            lrFy = fyVal;
+            lrState = "awaitingC";
+            document.getElementById("interactivePrompt").innerText = "Enter c (conservative):";
+            return;
+          }
+
+          // If we're waiting for c, parse it and compute Lr:
+          if (lrState === "awaitingC") {
+            const cVal = parseFloat(rawValue);
+            if (isNaN(cVal) || cVal <= 0) {
+              printLine("❌ Please enter a valid numeric c.", "error");
+              return;
+            }
+            // Compute Lr using rts from JSON and separate J and c:
+            const shapeObj = lrShapeObj;
+            const rts_orig = parseFloat(shapeObj["rts"]);
+            const r_ts = rts_orig * Math.sqrt(cVal);
+            const ho = parseFloat(shapeObj["d"]) - parseFloat(shapeObj["tf"]);
+            const Sx = parseFloat(shapeObj["Sx"]);
+            const J = parseFloat(shapeObj["J"]);
+            const term = (0.7 * lrFy / lrE) * ((Sx * ho) / (J * cVal));
+            const inside = 1 + Math.sqrt(1 + 6.76 * Math.pow(term, 2));
+            const Lr = 1.95 * r_ts * Math.sqrt(lrE / (0.7 * lrFy)) * Math.sqrt(inside);
+            const Lr_ft = Lr / 12;
+            printLine(`Lr = ${Lr_ft.toFixed(2)} ft (for Fy=${lrFy}, c=${cVal})`);
+            // Clear prompt after computing Lr
+            document.getElementById("interactivePrompt").innerText = "";
+            lrState = null;
+            lrShapeObj = null;
+            return;
+          }
+          // ----- End Lr state machine -----
+
+          // Detect SPF wood commands like "spf 2x12"
+          const spfMatch = rawValue.match(/^spf\s+(\d+x\d+)$/i);
+          if (spfMatch && spfWoodData) {
+            const shapeKey = spfMatch[1].toLowerCase();
+            if (!spfWoodData[shapeKey]) {
+              printLine(`❌ SPF shape not found: ${shapeKey}`, "error");
+              return;
+            }
+            const woodObj = spfWoodData[shapeKey];
+            printLine(`SPF ${woodObj.Shape}:`);
+            printLine(`V\t${woodObj.V} lbs`);
+            printLine(`M\t${woodObj.M} ft-lbs`);
+            if (woodObj.EI && woodObj.EI !== "N/A") {
+              printLine(`EI\t${woodObj.EI} (10^6)`);
+            }
+            
+            // Add Copy to Excel button for SPF wood
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(woodObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
+            return;
+          }
+
+          // Handle "spf" command to show the whole table
+          if (rawValue.toUpperCase() === 'SPF' && spfWoodData) {
+            const outDiv = document.getElementById("terminalOutput");
+            
+            // Create table element
+            const table = document.createElement('table');
+            table.style.marginTop = '8px';
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '300px';
+
+            // Create table header
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const headers = Object.keys(spfWoodData[Object.keys(spfWoodData)[0]]);
+            headers.forEach(headerText => {
+              const th = document.createElement('th');
+              th.textContent = headerText;
+              th.style.textAlign = 'left';
+              th.style.padding = '4px 8px';
+              th.style.borderBottom = '1px solid #555';
+              headerRow.appendChild(th);
+            });
+
+            // Create table body
+            const tbody = table.createTBody();
+            Object.values(spfWoodData).forEach(woodObj => {
+              const row = tbody.insertRow();
+              headers.forEach(header => {
+                const cell = row.insertCell();
+                cell.textContent = woodObj[header] || 'N/A';
+                cell.style.padding = '4px 8px';
+              });
+            });
+
+            outDiv.appendChild(table);
+
+            const btn = document.createElement("button");
+            btn.textContent = "Copy SPF Table to Excel";
+            btn.style.marginTop = '8px';
+            btn.onclick = () => copyTableToClipboard(spfWoodData, "SPF");
+            outDiv.appendChild(btn);
+
+            outDiv.scrollTop = outDiv.scrollHeight;
+            return;
+          }
+
+          // Handle "lvl" command to show the whole table
+          if (rawValue.toUpperCase() === 'LVL' && lvlWoodData) {
+            const outDiv = document.getElementById("terminalOutput");
+
+            const table = document.createElement('table');
+            table.style.marginTop = '8px';
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '400px';
+
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const headers = Object.keys(lvlWoodData[0]);
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.textAlign = 'left';
+                th.style.padding = '4px 8px';
+                th.style.borderBottom = '1px solid #555';
+                headerRow.appendChild(th);
+            });
+
+            const tbody = table.createTBody();
+            lvlWoodData.forEach(woodObj => {
+                const row = tbody.insertRow();
+                headers.forEach(header => {
+                    const cell = row.insertCell();
+                    cell.textContent = woodObj[header] || 'N/A';
+                    cell.style.padding = '4px 8px';
+                });
+            });
+
+            outDiv.appendChild(table);
+
+            const btn = document.createElement("button");
+            btn.textContent = "Copy LVL Table to Excel";
+            btn.style.marginTop = '8px';
+            btn.onclick = () => copyTableToClipboard(lvlWoodData, "LVL");
+            outDiv.appendChild(btn);
+
+            outDiv.scrollTop = outDiv.scrollHeight;
+            return;
+          }
+
+          // Detect "<W##X##> LR" command to start Lr flow:
+          const lrMatch = rawValue.match(/^(W\d+X\d+)\s+LR$/i);
+          if (lrMatch && wShapeData) {
+            const wk = lrMatch[1];
+            if (!wShapeData[wk]) {
+              printLine(`❌ Shape not found: ${wk}`, "error");
+              return;
+            }
+            // Initialize Lr sequence
+            lrShapeObj = wShapeData[wk];
+            lrState = "awaitingFy";
+            document.getElementById("interactivePrompt").innerText = "";
+            printLine(`E (ksi) default = ${lrE}`);
+            document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
+            return;
+          }
+
+          // Detect "<W##X##> LP" command to start Lp flow:
+          const lpMatch = rawValue.match(/^(W\d+X\d+)\s+LP$/i);
+          if (lpMatch && wShapeData) {
+            const wk = lpMatch[1];
+            if (!wShapeData[wk]) {
+              printLine(`❌ Shape not found: ${wk}`, "error");
+              return;
+            }
+            // Initialize Lp sequence
+            lpShapeObj = wShapeData[wk];
+            lpState = "awaitingFyLP";
+            document.getElementById("interactivePrompt").innerText = "";
+            printLine(`E (ksi) default = ${lpE}`);
+            document.getElementById("interactivePrompt").innerText = "Enter Fy (ksi):";
+            return;
+          }
+
+          // Detect "vals" command to start V, M, EI calculation flow:
+          if (rawValue.toUpperCase() === 'VALS') {
+            valsState = "awaitingW";
+            document.getElementById("interactivePrompt").innerText = "Enter w (total distributed load in plf):";
+            return;
+          }
+
+          // First, check W shapes:
+          if (wShapeData && wShapeData[rawValue]) {
+            document.getElementById("interactivePrompt").innerText = "";
+            const shapeObj = wShapeData[rawValue];
+            Object.entries(shapeObj).forEach(([key, val]) => {
+              printLine(`${key}\t${val}`);
+            });
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(shapeObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
+            return;
+          }
+
+          // Next, check MC shapes:
+          if (mcShapeData && mcShapeData[rawValue]) {
+            document.getElementById("interactivePrompt").innerText = "";
+            const shapeObj = mcShapeData[rawValue];
+            Object.entries(shapeObj).forEach(([key, val]) => {
+              printLine(`${key}\t${val}`);
+            });
+            const btn = document.createElement("button");
+            btn.textContent = "Copy to Excel";
+            btn.onclick = () => copyLastShapeToClipboard(shapeObj);
+            const outDiv = document.getElementById("terminalOutput");
+            outDiv.appendChild(btn);
+            return;
+          }
+
+          // If not found:
+          document.getElementById("interactivePrompt").innerText = "";
+          printLine(`Shape "${rawValue}" not found.`, "error");
+        }
+      });
+
+    // ------------------------------------------------------------------------
+    // Copy-to-clipboard for last printed shape
+    // Creates tab-separated lines "key<TAB>value" for Excel.
+    // ------------------------------------------------------------------------
+    function copyLastShapeToClipboard(shapeObj) {
+      const lines = Object.entries(shapeObj).map(
+        ([key, val]) => `${key}\t${val}`
+      );
+      const text = lines.join("\n");
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      printLine("(Copied to clipboard)", "loading");
+    }
+
+    function copyTableToClipboard(data, name) {
+      if (!data) return;
+      
+      const dataAsArray = Array.isArray(data) ? data : Object.values(data);
+      if(dataAsArray.length === 0) return;
+
+      const headers = Object.keys(dataAsArray[0]);
+      const headerLine = headers.join('\t');
+      const lines = dataAsArray.map(shapeObj => {
+        return headers.map(header => shapeObj[header] || '').join('\t');
+      });
+
+      const text = [headerLine, ...lines].join('\n');
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      printLine(`(Copied ${name} table to clipboard)`, "loading");
+    }
+
+    // ------------------------------------------------------------------------
+    // Show suggestions as user types
+    // ------------------------------------------------------------------------
+    const suggestionsDiv = document.createElement("div");
+    suggestionsDiv.style.position = "absolute";
+    suggestionsDiv.style.backgroundColor = "#252526";
+    suggestionsDiv.style.color = "#c5c5c5";
+    suggestionsDiv.style.border = "1px solid #333";
+    suggestionsDiv.style.maxHeight = "150px";
+    suggestionsDiv.style.overflowY = "auto";
+    suggestionsDiv.style.width = "200px";
+    suggestionsDiv.style.display = "none";
+    suggestionsDiv.style.zIndex = "1000";
+    document.body.appendChild(suggestionsDiv);
+
+    const inputElem = document.getElementById("terminalInput");
+    inputElem.style.position = "relative";
+
+    inputElem.addEventListener("input", () => {
+      const rect = inputElem.getBoundingClientRect();
+      suggestionsDiv.style.top = rect.bottom + window.scrollY + "px";
+      suggestionsDiv.style.left = rect.left + window.scrollX + "px";
+      showSuggestions(inputElem.value);
+    });
+
+    function showSuggestions(inputValue) {
+        if ((!wShapeLoaded && !mcShapeLoaded && !spfWoodLoaded && !lvlWoodLoaded) || !inputValue) {
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+        
+        // Handle SPF wood suggestions
+        if (inputValue.toLowerCase().startsWith('spf')) {
+          const spfMatches = Object.keys(spfWoodData || {}).filter(key =>
+            key.toLowerCase().includes(inputValue.toLowerCase().replace('spf', '').trim())
+          );
+          
+          if (spfMatches.length) {
+            suggestionsDiv.innerHTML = spfMatches
+              .map(key => `<div style="padding:4px; cursor:pointer;">spf ${key}</div>`)
+              .join("");
+            suggestionsDiv.style.display = "block";
+
+            Array.from(suggestionsDiv.children).forEach((child, idx) => {
+              child.addEventListener("click", () => {
+                inputElem.value = `spf ${spfMatches[idx]}`;
+                suggestionsDiv.style.display = "none";
+                inputElem.focus();
+              });
+            });
+            return;
+          }
+        }
+        
+        // Handle LVL wood suggestions
+        if (inputValue.toLowerCase().startsWith('lvl')) {
+          suggestionsDiv.innerHTML = `<div style="padding:4px; cursor:pointer;">lvl</div>`;
+          suggestionsDiv.style.display = "block";
+          suggestionsDiv.children[0].addEventListener("click", () => {
+            inputElem.value = 'lvl';
+            suggestionsDiv.style.display = "none";
+            inputElem.focus();
+          });
+          return;
+        }
+
+        const allKeys = Object.keys(wShapeData || {}).concat(Object.keys(mcShapeData || {}));
+        const matches = allKeys.filter(key =>
+          key.startsWith(inputValue.toUpperCase())
+        );
+        matches.sort((a, b) => {
+          const wA = a.match(/^W(\d+)X(\d+)/i);
+          const wB = b.match(/^W(\d+)X(\d+)/i);
+          if (wA && wB) {
+            const weightA = parseInt(wA[2], 10);
+            const weightB = parseInt(wB[2], 10);
+            return weightA - weightB;
+          }
+          if (wA && !wB) return -1;
+          if (!wA && wB) return 1;
+          const numA = parseInt(a.match(/\d+/)[0], 10);
+          const numB = parseInt(b.match(/\d+/)[0], 10);
+          return numA - numB;
+        });
+
+        if (matches.length) {
+          suggestionsDiv.innerHTML = matches
+            .map(key => `<div style="padding:4px; cursor:pointer;">${key}</div>`)
+            .join("");
+          suggestionsDiv.style.display = "block";
+
+          Array.from(suggestionsDiv.children).forEach((child, idx) => {
+            child.addEventListener("click", () => {
+              inputElem.value = matches[idx];
+              suggestionsDiv.style.display = "none";
+              inputElem.focus();
+            });
+          });
+        } else {
+          suggestionsDiv.style.display = "none";
+        }
+    }
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ lang: en
 toc-title: Contents
 ---
 
-## Python Notebooks - For Strucural Eng 
+## Low Rise Wind Load Calculator
 [ASCE7 CH28 Low Rise Wind Load Calculator Kaggle](https://www.kaggle.com/code/gabrielkafka/asce716-ch28)
 
 ## Moment Distribuition Killer 

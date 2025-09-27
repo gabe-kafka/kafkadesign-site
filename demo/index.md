@@ -10,6 +10,10 @@ toc-title: Contents
 ## Python Notebooks - For Strucural Eng 
 [ASCE7 CH28 Low Rise Wind Load Calculator Kaggle](https://www.kaggle.com/code/gabrielkafka/asce716-ch28)
 
+## Moment Distribuition Killer 
+I've made this so I/we never have to do a moment distribuition by hand again. 
+[Moment Distribuition Killer](https://www.kaggle.com/code/gabrielkafka/moment-distribuition-killer)
+
 ## Structural Terminal
 Bloomberg Terminal for Structural Engineers. It doesn't exist but it should. [Structural Terminal Link](structural-terminal.html)
 ![Structural Terminal](images/terminal-pic.jpg)

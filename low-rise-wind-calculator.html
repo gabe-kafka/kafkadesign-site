@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Low-Rise Wind Load Calculator (ASCE 7-16) | Kafka Design</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #000000; /* True black background */
+      font-family: 'Inter', sans-serif;
+      color: #e5e7eb; /* Light gray text for readability */
+    }
+    .iframe-container {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 aspect ratio */
+    }
+    .iframe-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    @media (max-width: 768px) {
+      .iframe-container {
+        padding-top: 75%; /* Adjust for mobile */
+      }
+    }
+    .iframe-container::after {
+      content: 'Loading...';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #e5e7eb;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold text-white">Low-Rise Wind Load Calculator (ASCE 7-16)</h1>
+      <p class="mt-2 text-gray-300">
+        An interactive tool to determine eligibility and calculate wind pressures for low-rise buildings per ASCE 7-16 Chapter 28, Part 1. 
+        Powered by <a href="https://colab.research.google.com" target="_blank" rel="noopener noreferrer" class="text-gray-200 hover:underline">Google Colab</a>.
+        Return to <a href="https://kafkadesign.io" class="text-gray-200 hover:underline">Kafka Design</a>.
+      </p>
+    </header>
+    <div class="iframe-container bg-gray-900 rounded-lg shadow-md">
+      <iframe src="https://colab.research.google.com/drive/1abc123xyz..." 
+              title="Wind Load Calculator Notebook"
+              allow="clipboard-write; encrypted-media; web-share">
+        <p class="p-4 text-gray-300">
+          Your browser doesn't support iframes. 
+          <a href="https://colab.research.google.com/drive/1abc123xyz..." 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             class="text-gray-200 hover:underline">
+            Access the Wind Load Calculator on Google Colab
+          </a>.
+        </p>
+      </iframe>
+    </div>
+    <footer class="mt-6 text-center text-gray-400 text-sm">
+      <p>Built by Kafka Design | <a href="https://kafkadesign.io" class="text-gray-200 hover:underline">kafkadesign.io</a></p>
+    </footer>
+  </div>
+</body>
+</html>

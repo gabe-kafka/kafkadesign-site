@@ -8,7 +8,7 @@ toc-title: Contents
 ---
 
 ## Python Notebooks - For Strucural Eng 
-[ASCE7 CH28 Low Rise Wind Load Calculator](low-rise-wind-calculator.html)
+[ASCE7 CH28 Low Rise Wind Load Calculator Kaggle](https://www.kaggle.com/code/gabrielkafka/asce716-ch28)
 
 ## Structural Terminal
 Bloomberg Terminal for Structural Engineers. It doesn't exist but it should. [Structural Terminal Link](structural-terminal.html)

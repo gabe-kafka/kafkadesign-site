@@ -7,6 +7,10 @@ lang: en
 toc-title: Contents
 ---
 
+## Doubly Reinforced Concrete Beam MOMENT CALCULATOR
+Give it a try, especially useful for very large doubly reinforced beams
+[Beam Section Moment Calculator] (https://doubly-reinforced-concrete-beam.streamlit.app/)
+
 ## Low Rise Wind Load Calculator
 [ASCE7 CH28 Low Rise Wind Load Calculator Kaggle](https://www.kaggle.com/code/gabrielkafka/asce716-ch28)
 

@@ -7,7 +7,7 @@ lang: en
 toc-title: Contents
 ---
 
-## Doubly Reinforced Concrete Beam MOMENT CALCULATOR
+## BEAM DESIGN
 Give it a try, especially useful for very large doubly reinforced beams
 [Beam Section Moment Calculator] (https://doubly-reinforced-concrete-beam.streamlit.app/)
 

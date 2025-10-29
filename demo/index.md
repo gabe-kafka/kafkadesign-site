@@ -11,7 +11,7 @@ This should be in the code as a plot not a table.
 ![Kz Chart](demo/kz_plotted.jpg)
 ## BEAM DESIGN
 Give it a try, especially useful for very large doubly reinforced beams
-[BEAM DESIGN](https://doubly-reinforced-concrete-beam.streamlit.app/)
+[BEAM DESIGN](https://huggingface.co/spaces/gabekafka/doubly-reinf-beam)
 
 ## Low Rise Wind Load Calculator
 [ASCE7 CH28 Low Rise Wind Load Calculator Kaggle](https://www.kaggle.com/code/gabrielkafka/asce716-ch28)

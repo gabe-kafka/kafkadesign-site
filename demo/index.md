@@ -9,6 +9,7 @@ toc-title: Contents
 ## Kz -  ASCE WIND EXPOSURE FACTOR
 This should be in the code as a plot not a table. 
 ![Kz Chart](demo/kz_plotted.jpg)
+
 ## BEAM DESIGN
 Give it a try, especially useful for very large doubly reinforced beams
 [BEAM DESIGN](https://huggingface.co/spaces/gabekafka/doubly-reinf-beam)

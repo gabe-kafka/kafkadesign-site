@@ -7,16 +7,10 @@ lang: en
 toc-title: Contents
 ---
 
-## Automated Tributary Area - For Column Load Takedown
-Inputs: Formatted .dxf file with "BOUNDARY", "COLUMN", "WALL", "FLOOR LABEL", and "COL. NUMBER" layers
-
-Outputs: 
--tributary_output.dxf
--column_load_takedown.xlxs
 
 ## Kz -  ASCE WIND EXPOSURE FACTOR
 This should be in the code as a plot not a table. 
-![Kz Chart](demo/kz_plotted.jpg)
+![Kz Chart](demo/kz_plotted.png)
 
 ## BEAM DESIGN
 Give it a try, especially useful for very large doubly reinforced beams

@@ -9,7 +9,7 @@ toc-title: Contents
 
 
 ## Kz -  ASCE WIND EXPOSURE FACTOR
-This should be in the code as a plot not a table. 
+Useful plot of Kz profile. 
 ![Kz Profile](demo/kz_plotted.png)
 
 ## BEAM DESIGN

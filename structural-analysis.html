@@ -307,6 +307,13 @@
           <label for="beamLength">Beam Length (ft):</label>
           <input type="number" id="beamLength" value="20" step="0.1" min="0.1">
         </div>
+        <div class="input-group">
+          <label for="maxDeflection">Maximum Deflection Limit (in):</label>
+          <input type="number" id="maxDeflection" value="" step="0.01" min="0.01" placeholder="e.g., L/360 = 0.67">
+          <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;">
+            Common values: L/360 = <span id="l360Value">0.67</span> in, L/240 = <span id="l240Value">1.00</span> in, L/180 = <span id="l180Value">1.33</span> in
+          </p>
+        </div>
       </div>
 
       <div class="spreadsheet-container">
@@ -322,7 +329,7 @@
             </thead>
             <tbody id="pointLoadsBody">
               <tr>
-                <td><input type="number" class="table-input point-location" value="10" step="0.1" min="0"></td>
+                <td><input type="number" class="table-input point-location" value="10" step="0.1" min="0" id="defaultPointLocation"></td>
                 <td><input type="number" class="table-input point-magnitude" value="5" step="0.1"></td>
                 <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
               </tr>
@@ -351,8 +358,8 @@
             </thead>
             <tbody id="distributedLoadsBody">
               <tr>
-                <td><input type="number" class="table-input dist-start" value="2" step="0.1" min="0"></td>
-                <td><input type="number" class="table-input dist-end" value="8" step="0.1" min="0"></td>
+                <td><input type="number" class="table-input dist-start" value="0" step="0.1" min="0" id="defaultDistStart"></td>
+                <td><input type="number" class="table-input dist-end" value="20" step="0.1" min="0" id="defaultDistEnd"></td>
                 <td><input type="number" class="table-input dist-magnitude" value="1" step="0.1"></td>
                 <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
               </tr>
@@ -582,8 +589,16 @@
       const Vu = Math.max(...V.map(Math.abs));
       const Mu = Math.max(...M.map(Math.abs));
 
+      // Get maximum deflection limit
+      const maxDeflectionInput = document.getElementById('maxDeflection').value;
+      if (!maxDeflectionInput || parseFloat(maxDeflectionInput) <= 0) {
+        alert('Please enter a maximum deflection limit (in inches) before calculating EI required.');
+        return;
+      }
+      const maxDeflectionLimit = parseFloat(maxDeflectionInput);
+
       // Calculate deflection and EI required
-      const { deflection, EIRequired } = calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x);
+      const { deflection, EIRequired } = calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x, maxDeflectionLimit);
 
       // Display results
       displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, EIRequired, x, V, M);
@@ -688,7 +703,7 @@
       return { V, M, x };
     }
 
-    function calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x) {
+    function calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x, deflectionLimit_in) {
       // Calculate deflection using numerical integration of moment diagram
       // Deflection = ∫∫(M/EI) dx dx
       // We'll calculate assuming EI = 1, then scale based on deflection limit
@@ -732,10 +747,7 @@
       // Find maximum deflection (absolute value)
       const maxDeflection = Math.max(...deflection.map(Math.abs));
       
-      // Use L/360 as default deflection limit (common for floors)
-      // This is a serviceability limit, typically applied to live loads
-      const deflectionLimit_in = (beamLength * 12) / 360; // Convert to inches
-      
+      // Use user-provided deflection limit (in inches)
       // Since we calculated deflection assuming EI = 1 kip-in²,
       // actual deflection = calculated_deflection / actual_EI
       // So: actual_EI = calculated_deflection / actual_deflection
@@ -878,7 +890,51 @@
       }
     });
 
+    function updateDefaultValues() {
+      const beamLength = parseFloat(document.getElementById('beamLength').value) || 20;
+      const midLength = beamLength / 2;
+      
+      // Update point load location to midlength
+      const pointLocationInput = document.getElementById('defaultPointLocation');
+      if (pointLocationInput) {
+        pointLocationInput.value = midLength.toFixed(1);
+      }
+      
+      // Update distributed load to span full beam
+      const distStartInput = document.getElementById('defaultDistStart');
+      const distEndInput = document.getElementById('defaultDistEnd');
+      if (distStartInput) {
+        distStartInput.value = '0';
+      }
+      if (distEndInput) {
+        distEndInput.value = beamLength.toFixed(1);
+      }
+      
+      // Update deflection limit helper values
+      const l360Value = (beamLength * 12) / 360;
+      const l240Value = (beamLength * 12) / 240;
+      const l180Value = (beamLength * 12) / 180;
+      
+      const l360Span = document.getElementById('l360Value');
+      const l240Span = document.getElementById('l240Value');
+      const l180Span = document.getElementById('l180Value');
+      
+      if (l360Span) l360Span.textContent = l360Value.toFixed(2);
+      if (l240Span) l240Span.textContent = l240Value.toFixed(2);
+      if (l180Span) l180Span.textContent = l180Value.toFixed(2);
+      
+      // Set default deflection limit to L/360 if empty
+      const maxDeflectionInput = document.getElementById('maxDeflection');
+      if (maxDeflectionInput && !maxDeflectionInput.value) {
+        maxDeflectionInput.value = l360Value.toFixed(2);
+      }
+    }
+
+    // Update defaults when beam length changes
+    document.getElementById('beamLength').addEventListener('input', updateDefaultValues);
+
     window.onload = function() {
+      updateDefaultValues();
       analyzeBeam();
     };
   </script>

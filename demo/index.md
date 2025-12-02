@@ -6,7 +6,9 @@ author-url: "https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b"
 lang: en
 toc-title: Contents
 ---
-
+## Wind Pressure Ingredients 
+Pulled from ASCE7-22 CH26 Mostly
+[wind ingredients](https://huggingface.co/spaces/gabekafka/wind_ingredients)
 
 ## Kz -  ASCE WIND EXPOSURE FACTOR
 Useful plot of Kz profile. 

@@ -236,7 +236,7 @@
     
     .calculation-results {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 15px;
       margin: 15px 0;
     }
@@ -441,6 +441,11 @@
             <div class="result-value" id="shearValue">0.00</div>
             <div>kips</div>
           </div>
+          <div class="result-card">
+            <div class="result-label">EI Required</div>
+            <div class="result-value" id="eiValue">0.00</div>
+            <div>(10^6) in²-lb</div>
+          </div>
         </div>
         <div id="plotlyDiv"></div>
       </div>
@@ -577,8 +582,11 @@
       const Vu = Math.max(...V.map(Math.abs));
       const Mu = Math.max(...M.map(Math.abs));
 
+      // Calculate deflection and EI required
+      const { deflection, EIRequired } = calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x);
+
       // Display results
-      displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, x, V, M);
+      displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, EIRequired, x, V, M);
     }
 
     function calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads) {
@@ -680,7 +688,70 @@
       return { V, M, x };
     }
 
-    function displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, x, V, M) {
+    function calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x) {
+      // Calculate deflection using numerical integration of moment diagram
+      // Deflection = ∫∫(M/EI) dx dx
+      // We'll calculate assuming EI = 1, then scale based on deflection limit
+      const numPoints = M.length;
+      
+      // Convert moment from kip-ft to kip-in and assume EI = 1 kip-in²
+      // So curvature = M (in kip-in) / 1 = M (in kip-in)
+      const curvature = M.map(m => m * 12); // Convert kip-ft to kip-in
+      
+      // First integration: slope (radians)
+      const slope = [0];
+      for (let i = 1; i < numPoints; i++) {
+        const dx_ft = x[i] - x[i-1];
+        const dx_in = dx_ft * 12; // Convert to inches
+        // Trapezoidal integration
+        slope.push(slope[i-1] + (curvature[i-1] + curvature[i]) * dx_in / 2);
+      }
+      
+      // Adjust slope to satisfy boundary conditions at supports
+      // For pinned/roller supports, slope may not be zero, but we'll account for this
+      const leftSupportIndex = supports.length > 0 ? 
+        Math.round((Math.min(...supports.map(s => s.location)) / beamLength) * (numPoints - 1)) : 0;
+      
+      // Second integration: deflection (inches)
+      const deflection = [0];
+      for (let i = 1; i < numPoints; i++) {
+        const dx_ft = x[i] - x[i-1];
+        const dx_in = dx_ft * 12; // Convert to inches
+        // Trapezoidal integration
+        deflection.push(deflection[i-1] + (slope[i-1] + slope[i]) * dx_in / 2);
+      }
+      
+      // Adjust deflection so it's zero at left support
+      if (leftSupportIndex >= 0 && leftSupportIndex < deflection.length) {
+        const deflectionOffset = deflection[leftSupportIndex];
+        for (let i = 0; i < deflection.length; i++) {
+          deflection[i] -= deflectionOffset;
+        }
+      }
+      
+      // Find maximum deflection (absolute value)
+      const maxDeflection = Math.max(...deflection.map(Math.abs));
+      
+      // Use L/360 as default deflection limit (common for floors)
+      // This is a serviceability limit, typically applied to live loads
+      const deflectionLimit_in = (beamLength * 12) / 360; // Convert to inches
+      
+      // Since we calculated deflection assuming EI = 1 kip-in²,
+      // actual deflection = calculated_deflection / actual_EI
+      // So: actual_EI = calculated_deflection / actual_deflection
+      // For required EI: EI_required = calculated_deflection / deflection_limit
+      // Units: deflection is in inches, so EI will be in kip-in²
+      // Convert to lb-in²: 1 kip = 1000 lb
+      const EIRequired_kip_in2 = maxDeflection / deflectionLimit_in;
+      const EIRequired_lb_in2 = EIRequired_kip_in2 * 1000;
+      
+      // Convert to (10^6) in²-lb format for display
+      const EIRequired = EIRequired_lb_in2 / 1000000;
+      
+      return { deflection: maxDeflection, EIRequired };
+    }
+
+    function displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, EIRequired, x, V, M) {
       document.getElementById('results').style.display = 'block';
 
       let beamRep = 'Multi-Support Beam:\n';
@@ -708,6 +779,7 @@
 
       document.getElementById('momentValue').textContent = Mu.toFixed(2);
       document.getElementById('shearValue').textContent = Vu.toFixed(2);
+      document.getElementById('eiValue').textContent = EIRequired.toFixed(2);
 
       const trace1 = {
         x: x,

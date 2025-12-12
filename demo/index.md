@@ -6,8 +6,11 @@ author-url: "https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b"
 lang: en
 toc-title: Contents
 ---
-## Wind Pressure Ingredients 
-Pulled from ASCE7-22 CH26 Mostly
+## 2-WAY SLAB FAST
+Download the Excel workbook here: [2-WAY SLAB FAST](css/2-WAY%20SLAB%20FAST.xlsx)
+
+## Wind Pressure 
+Pulled from ASCE7-22 CH26-27 Mostly
 [wind ingredients](https://huggingface.co/spaces/gabekafka/wind_ingredients)
 
 ## Kz -  ASCE WIND EXPOSURE FACTOR
@@ -38,5 +41,4 @@ This one is rough but its funny how often I find myself using it
 
 
 The full source code is here: [github.com/owickstrom/the-monospace-web](https://github.com/owickstrom/the-monospace-web)
-
 

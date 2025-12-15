@@ -7,6 +7,7 @@ lang: en
 toc-title: Contents
 ---
 ## 2-WAY SLAB FAST
+Download->ask your preferred ai what it does->design 2 way slabs by hand fast. No need to pay for that expensive FEA software.
 Download the Excel workbook here: [2-WAY SLAB FAST](css/2-WAY%20SLAB%20FAST.xlsx)
 
 ## Wind Pressure 
@@ -16,6 +17,10 @@ Pulled from ASCE7-22 CH26-27 Mostly
 ## Kz -  ASCE WIND EXPOSURE FACTOR
 Useful plot of Kz profile. 
 ![Kz Profile](demo/kz_plotted.jpeg)
+
+## Earthquake Loading Protocol
+Reference diagram for earthquake test loading.
+![Earthquake Loading Protocol](assets/data/Earthquake%20Loading%20Protocol.png)
 
 ## BEAM DESIGN
 Give it a try, especially useful for very large doubly reinforced beams
@@ -41,4 +46,3 @@ This one is rough but its funny how often I find myself using it
 
 
 The full source code is here: [github.com/owickstrom/the-monospace-web](https://github.com/owickstrom/the-monospace-web)
-

@@ -9,7 +9,7 @@ toc-title: Contents
 
 ## Simple Punching Shear 
 Starting point for shear rail study
-![Punching Shear](assets/data/Punching%20Shear%20+%20Shear%20Rail%20Graphic.pdf)
+![Punching Shear](assets/data/Punching%20Shear%20+%20Shear%20Rail%20Graphic.jpg)
 
 ## Earthquake Loading Protocol
 Reference diagram for earthquake test loading.

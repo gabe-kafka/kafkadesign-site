@@ -50,4 +50,6 @@ This one is rough but its funny how often I find myself using it
 <hr>
 
 
-The full source code is here: [github.com/owickstrom/the-monospace-web](https://github.com/owickstrom/the-monospace-web)
+Linkedin: [https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/](https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/)
+
+

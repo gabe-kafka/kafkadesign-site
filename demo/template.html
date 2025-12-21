@@ -37,10 +37,12 @@ $endfor$
       <h1 class="title">$title$</h1>
       <span class="subtitle">$subtitle$</span>
     </td>
-$if(author)$
-    <td class="width-min">$if(author-url)$<a href="$author-url$"><cite>$author$</cite></a>$else$<cite>$author$</cite>$endif$</td>
-$endif$
   </tr>
+$if(author)$
+  <tr>
+    <td class="width-auto header-author">$if(author-url)$<a href="$author-url$"><cite>$author$</cite></a>$else$<cite>$author$</cite>$endif$</td>
+  </tr>
+$endif$
 </table>
 <label class="debug-toggle-label"><input type="checkbox" class="debug-toggle" /> Debug mode</label>
 $if(abstract)$

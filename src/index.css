@@ -178,8 +178,9 @@ th {
 .header h1 {
   margin: 0;
 }
-.header tr td:last-child {
-  text-align: right;
+.header .header-author {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
 }
 
 p {

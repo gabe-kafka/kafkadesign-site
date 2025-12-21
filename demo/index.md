@@ -50,6 +50,8 @@ This one is rough but its funny how often I find myself using it
 <hr>
 
 
-Linkedin: [https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/](https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/)
+Linkedin: [Gabriel Kafka Linkedin](https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/)
+
+Hugging Face [gabekafka huggingface](https://huggingface.co/gabekafka)
 
 

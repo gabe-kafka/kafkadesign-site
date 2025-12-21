@@ -33,22 +33,13 @@ $include-before$
 $endfor$
 <table class="header">
   <tr>
-    <td colspan="2" rowspan="2" class="width-auto">
+    <td class="width-auto">
       <h1 class="title">$title$</h1>
       <span class="subtitle">$subtitle$</span>
     </td>
-    <th>Version</th>
-    <td class="width-min">$version$</td>
-  </tr>
-  <tr>
-    <th>Updated</th>
-    <td class="width-min"><time style="white-space: pre;">$date$</time></td>
-  </tr>
-  <tr>
-    <th class="width-min">Author</th>
-    <td class="width-auto"><a href="$author-url$"><cite>$author$</cite></a></td>
-    <th class="width-min">License</th>
-    <td>MIT</td>
+$if(author)$
+    <td class="width-min">$if(author-url)$<a href="$author-url$"><cite>$author$</cite></a>$else$<cite>$author$</cite>$endif$</td>
+$endif$
   </tr>
 </table>
 <label class="debug-toggle-label"><input type="checkbox" class="debug-toggle" /> Debug mode</label>

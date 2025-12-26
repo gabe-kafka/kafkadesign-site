@@ -6,6 +6,9 @@ author-url: "https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b"
 lang: en
 toc-title: Contents
 ---
+## Concrete Stress Block Plotted and Interactive
+I am creating this concrete stress block plot as a foundation for post tensioned design consideration.
+![Plot](assets/data/conc_stress_block.png)
 
 ## Simple Punching Shear 
 Starting point for shear rail study
@@ -53,5 +56,4 @@ This one is rough but its funny how often I find myself using it
 Linkedin: [Gabriel Kafka Linkedin](https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/)
 
 Hugging Face [gabekafka huggingface](https://huggingface.co/gabekafka)
-
 

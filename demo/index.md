@@ -9,6 +9,8 @@ toc-title: Contents
 ## Concrete Stress Block Plotted and Interactive
 I am creating this concrete stress block plot as a foundation for post tensioned design consideration.
 ![Plot](assets/data/conc_stress_block.png)
+here is the compressed further consideration
+![Axial Added to Bending](assets/data/compressed_conc_stress_block.png)
 
 ## Simple Punching Shear 
 Starting point for shear rail study

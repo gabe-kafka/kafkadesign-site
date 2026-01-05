@@ -376,6 +376,29 @@
       </div>
 
       <div class="spreadsheet-container">
+        <h3 class="spreadsheet-title">Point Moments</h3>
+        <div class="table-container">
+          <table id="pointMomentsTable">
+            <thead>
+              <tr>
+                <th>Location (ft)</th>
+                <th>Moment (kip-ft)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="pointMomentsBody">
+              <tr class="empty-row">
+                <td><input type="number" class="table-input moment-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
+                <td><input type="number" class="table-input moment-magnitude" value="" step="0.1" placeholder="Enter moment"></td>
+                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-add" onclick="addPointMoment()">+ Add Point Moment</button>
+      </div>
+
+      <div class="spreadsheet-container">
         <h3 class="spreadsheet-title">Support Locations</h3>
         <div class="table-container">
           <table id="supportsTable">
@@ -485,6 +508,17 @@
       tbody.appendChild(newRow);
     }
 
+    function addPointMoment() {
+      const tbody = document.getElementById('pointMomentsBody');
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td><input type="number" class="table-input moment-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
+        <td><input type="number" class="table-input moment-magnitude" value="" step="0.1" placeholder="Enter moment"></td>
+        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
+      `;
+      tbody.appendChild(newRow);
+    }
+
     function addSupport() {
       const tbody = document.getElementById('supportsBody');
       const newRow = document.createElement('tr');
@@ -540,6 +574,16 @@
         }
       });
 
+      // Get point moments from table
+      const pointMoments = [];
+      document.querySelectorAll('#pointMomentsBody tr').forEach(row => {
+        const location = parseFloat(row.querySelector('.moment-location').value);
+        const magnitude = parseFloat(row.querySelector('.moment-magnitude').value);
+        if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength && magnitude !== 0) {
+          pointMoments.push({location, magnitude}); // Keep in kip-ft
+        }
+      });
+
       // Get supports from table
       const supports = [];
       document.querySelectorAll('#supportsBody tr').forEach(row => {
@@ -553,6 +597,7 @@
       // Sort loads
       pointLoads.sort((a, b) => a.location - b.location);
       distributedLoads.sort((a, b) => a.start - b.start);
+      pointMoments.sort((a, b) => a.location - b.location);
       supports.sort((a, b) => a.location - b.location);
 
       // Validate supports
@@ -578,13 +623,13 @@
       let reactions = [];
       
       if (isDeterminate) {
-        reactions = calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads);
+        reactions = calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads, pointMoments);
       } else {
-        reactions = calculateIndeterminateReactions(beamLength, supports, pointLoads, distributedLoads);
+        reactions = calculateIndeterminateReactions(beamLength, supports, pointLoads, distributedLoads, pointMoments);
       }
 
       // Calculate internal forces
-      const { V, M, x } = calculateInternalForces(beamLength, supports, reactions, pointLoads, distributedLoads);
+      const { V, M, x } = calculateInternalForces(beamLength, supports, reactions, pointLoads, distributedLoads, pointMoments);
 
       const Vu = Math.max(...V.map(Math.abs));
       const Mu = Math.max(...M.map(Math.abs));
@@ -598,13 +643,13 @@
       const maxDeflectionLimit = parseFloat(maxDeflectionInput);
 
       // Calculate deflection and EI required
-      const { deflection, EIRequired } = calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x, maxDeflectionLimit);
+      const { deflection, EIRequired } = calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, pointMoments, M, x, maxDeflectionLimit);
 
       // Display results
-      displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, EIRequired, x, V, M);
+      displayResults(beamLength, pointLoads, distributedLoads, pointMoments, supports, Mu, Vu, EIRequired, x, V, M);
     }
 
-    function calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads) {
+    function calculateDeterminateReactions(beamLength, supports, pointLoads, distributedLoads, pointMoments) {
       const reactions = new Array(supports.length).fill(0);
       
       if (supports.length === 2) {
@@ -625,6 +670,19 @@
           R_right += totalLoad * centroid / beamLength;
         });
 
+        // Point moment contributions
+        // A moment creates a couple: equal and opposite forces at supports
+        pointMoments.forEach(moment => {
+          // Moment in kip-ft, convert to kip-in for calculation, then back
+          const moment_kips = moment.magnitude; // Already in kip-ft
+          // The moment creates a vertical force couple: M/L
+          const forceCouple = moment_kips / beamLength; // kips
+          // Direction depends on moment direction (positive = counterclockwise)
+          // For a moment at location x, it creates R_left = -M/L and R_right = M/L
+          R_left -= forceCouple * 1000; // Convert to pounds
+          R_right += forceCouple * 1000;
+        });
+
         reactions[0] = R_left / 1000; // Convert to kips
         reactions[1] = R_right / 1000;
       }
@@ -632,7 +690,7 @@
       return reactions;
     }
 
-    function calculateIndeterminateReactions(beamLength, supports, pointLoads, distributedLoads) {
+    function calculateIndeterminateReactions(beamLength, supports, pointLoads, distributedLoads, pointMoments) {
       const reactions = new Array(supports.length).fill(0);
       
       let totalLoad = 0;
@@ -641,13 +699,22 @@
         totalLoad += load.magnitude * (load.end - load.start);
       });
 
+      // For indeterminate beams, moments create additional reactions
+      // Simplified approach: distribute moment effects proportionally
+      let totalMomentEffect = 0;
+      pointMoments.forEach(moment => {
+        totalMomentEffect += Math.abs(moment.magnitude);
+      });
+
       const loadPerSupport = totalLoad / supports.length;
-      reactions.fill(loadPerSupport / 1000);
+      const momentEffectPerSupport = totalMomentEffect / (beamLength * supports.length);
+      
+      reactions.fill((loadPerSupport + momentEffectPerSupport * 1000) / 1000);
       
       return reactions;
     }
 
-    function calculateInternalForces(beamLength, supports, reactions, pointLoads, distributedLoads) {
+    function calculateInternalForces(beamLength, supports, reactions, pointLoads, distributedLoads, pointMoments) {
       const numPoints = 1000;
       const x = [];
       const V = [];
@@ -687,6 +754,16 @@
         const dx = x[i] - x[i-1];
         M[i] = M[i-1] + (V[i-1] + V[i]) * dx / 2;
       }
+      
+      // Apply point moments - they create step changes (discontinuities) in the moment diagram
+      // Moments are applied at their exact location, creating a jump in the moment
+      pointMoments.forEach(moment => {
+        const momentIndex = Math.round((moment.location / beamLength) * (numPoints - 1));
+        // Add the moment to all points after the moment location
+        for (let i = momentIndex + 1; i < numPoints; i++) {
+          M[i] += moment.magnitude;
+        }
+      });
 
       if (supports.length >= 2) {
         const leftSupport = Math.min(...supports.map(s => s.location));
@@ -703,7 +780,7 @@
       return { V, M, x };
     }
 
-    function calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, M, x, deflectionLimit_in) {
+    function calculateDeflectionAndEI(beamLength, supports, reactions, pointLoads, distributedLoads, pointMoments, M, x, deflectionLimit_in) {
       // Calculate deflection using numerical integration of moment diagram
       // Deflection = ∫∫(M/EI) dx dx
       // We'll calculate assuming EI = 1, then scale based on deflection limit
@@ -763,7 +840,7 @@
       return { deflection: maxDeflection, EIRequired };
     }
 
-    function displayResults(beamLength, pointLoads, distributedLoads, supports, Mu, Vu, EIRequired, x, V, M) {
+    function displayResults(beamLength, pointLoads, distributedLoads, pointMoments, supports, Mu, Vu, EIRequired, x, V, M) {
       document.getElementById('results').style.display = 'block';
 
       let beamRep = 'Multi-Support Beam:\n';
@@ -785,6 +862,12 @@
         const startPos = Math.floor(load.start * 2);
         const length = Math.floor((load.end - load.start) * 2);
         beamRep += ' '.repeat(startPos) + '═'.repeat(length) + ` w = ${(load.magnitude/1000).toFixed(2)} kips/ft\n`;
+      });
+
+      pointMoments.forEach(moment => {
+        const pos = Math.floor(moment.location * 2);
+        const momentSymbol = moment.magnitude > 0 ? '↻' : '↺';
+        beamRep += ' '.repeat(pos) + `${momentSymbol} Mu = ${moment.magnitude.toFixed(2)} kip-ft\n`;
       });
 
       document.getElementById('beamRepresentation').textContent = beamRep;

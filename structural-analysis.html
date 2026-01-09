@@ -7,7 +7,9 @@
   <link rel="stylesheet" href="src/reset.css">
   <link rel="stylesheet" href="src/index.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@latest/dist/handsontable.full.min.css">
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/handsontable@latest/dist/handsontable.full.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -55,27 +57,33 @@
     }
     
     .input-section {
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+      display: flex;
+      gap: 15px;
+      align-items: flex-end;
+      flex-wrap: wrap;
     }
     
     .input-group {
-      margin: 15px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     
     .input-group label {
-      display: block;
-      margin-bottom: 6px;
       font-weight: normal;
       color: #e0e0e0;
-      font-size: 1em;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .input-group input {
-      width: 200px;
-      padding: 10px;
-      border: 1px solid #333; /* Matches styles.css */
-      border-radius: 3px;
-      font-size: 14px;
+      width: 120px;
+      padding: 6px 8px;
+      border: 1px solid #333;
+      border-radius: 2px;
+      font-size: 12px;
       background: #2a2a2a;
       color: #e0e0e0;
       font-family: 'Consolas', monospace;
@@ -84,49 +92,69 @@
     
     .input-group input:focus {
       outline: none;
-      border-color: #00ff9f; /* Green accent from styles.css */
+      border-color: #00ff9f;
       box-shadow: 0 0 0 2px rgba(0, 255, 159, 0.2);
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    @media (max-width: 1000px) {
+      .input-grid {
+        grid-template-columns: 1fr;
+      }
     }
     
     .spreadsheet-container {
-      margin: 20px 0;
-      border-radius: 4px;
+      margin: 0;
+      border-radius: 3px;
       overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+      background: #252525;
     }
     
     .spreadsheet-title {
       background: #2a2a2a;
       color: #00ff9f;
-      padding: 12px 15px;
+      padding: 6px 10px;
       margin: 0;
-      font-size: 1.2em;
+      font-size: 11px;
       font-weight: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .table-container {
       overflow-x: auto;
+      overflow-y: auto;
+      max-height: 200px;
       background: #252525;
     }
     
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
+      font-size: 12px;
       font-family: 'Consolas', monospace;
     }
     
     th {
       background: #2a2a2a;
-      padding: 12px;
+      padding: 6px 8px;
       text-align: left;
       font-weight: normal;
       color: #e0e0e0;
       border-bottom: 1px solid #333;
+      font-size: 12px;
+      white-space: nowrap;
     }
     
     td {
-      padding: 12px;
+      padding: 4px 6px;
       border-bottom: 1px solid #333;
       vertical-align: middle;
       color: #e0e0e0;
@@ -138,14 +166,15 @@
     
     .table-input {
       width: 100%;
-      padding: 8px;
+      padding: 4px 6px;
       border: 1px solid #333;
-      border-radius: 3px;
-      font-size: 14px;
+      border-radius: 2px;
+      font-size: 12px;
       background: #2a2a2a;
       color: #e0e0e0;
       font-family: 'Consolas', monospace;
       transition: border-color 0.3s;
+      min-width: 0;
     }
     
     .table-input:focus {
@@ -181,95 +210,149 @@
     .btn-remove {
       background: #ff5555; /* Red for remove */
       color: #e0e0e0;
+      padding: 4px 8px;
+      font-size: 11px;
     }
     
     .btn-remove:hover {
       background: #cc4444;
     }
+
+    .btn-copy {
+      background: #5555ff;
+      color: #e0e0e0;
+      padding: 4px 8px;
+      font-size: 11px;
+      margin-right: 5px;
+    }
+
+    .btn-copy:hover {
+      background: #4444cc;
+    }
+
+    .btn-paste {
+      background: #55ff55;
+      color: #1e1e1e;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .btn-paste:hover {
+      background: #44cc44;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #2a2a2a;
+      border-bottom: 1px solid #333;
+      align-items: center;
+    }
+
+    .table-actions button {
+      font-size: 10px;
+      padding: 4px 8px;
+    }
     
     .btn-analyze {
       background: #00ff9f;
       color: #1e1e1e;
-      padding: 15px 40px;
-      font-size: 18px;
+      padding: 8px 20px;
+      font-size: 12px;
       font-weight: normal;
       border: none;
-      border-radius: 4px;
+      border-radius: 3px;
       cursor: pointer;
-      margin: 20px 0;
       transition: all 0.3s;
-      box-shadow: 0 2px 10px rgba(0, 255, 159, 0.3);
+      box-shadow: 0 2px 5px rgba(0, 255, 159, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .btn-analyze:hover {
       background: #00cc7f;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0, 255, 159, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 255, 159, 0.4);
     }
     
     .results {
-      margin-top: 20px;
-      padding: 20px;
+      margin-top: 15px;
+      padding: 12px;
       background: #2a2a2a;
-      border-radius: 4px;
-      box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+      border-radius: 3px;
+      box-shadow: inset 0 1px 5px rgba(0,0,0,0.3);
     }
     
     .results h3 {
       color: #ecf0f1;
       margin-top: 0;
-      font-size: 1.3em;
+      margin-bottom: 10px;
+      font-size: 11px;
       font-weight: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #00ff9f;
     }
     
     .beam-diagram {
-      margin: 15px 0;
+      margin: 10px 0;
       font-family: 'Consolas', monospace;
       background: #1e1e1e;
-      color: #00ff9f; /* Green for terminal effect */
-      padding: 15px;
-      border-radius: 4px;
-      font-size: 14px;
-      line-height: 1.4;
+      color: #00ff9f;
+      padding: 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      line-height: 1.3;
       overflow-x: auto;
+      max-height: 100px;
+      overflow-y: auto;
     }
     
     .calculation-results {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 15px;
-      margin: 15px 0;
+      gap: 10px;
+      margin: 10px 0;
     }
     
     .result-card {
       background: #252525;
-      padding: 15px;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      padding: 8px;
+      border-radius: 3px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       text-align: center;
+      border: 1px solid #333;
     }
     
     .result-value {
-      font-size: 1.8em;
+      font-size: 1.4em;
       font-weight: normal;
       color: #00ff9f;
-      margin: 8px 0;
+      margin: 4px 0;
+      font-family: 'Consolas', monospace;
     }
     
     .result-label {
       color: #aaa;
-      font-size: 0.8em;
+      font-size: 9px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
+    }
+
+    .result-unit {
+      color: #888;
+      font-size: 9px;
+      margin-top: 2px;
     }
     
     #plotlyDiv {
       width: 100%;
-      height: 700px;
-      margin-top: 20px;
-      border-radius: 4px;
+      height: 500px;
+      margin-top: 15px;
+      border-radius: 3px;
       overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
     }
     
     .back-link {
@@ -292,6 +375,125 @@
     .empty-row {
       opacity: 0.6;
     }
+
+    /* Handsontable Dark Theme Overrides */
+    .handsontable {
+      background: #252525;
+      color: #e0e0e0;
+    }
+
+    .handsontable th {
+      background: #2a2a2a !important;
+      color: #e0e0e0 !important;
+      border-color: #333 !important;
+      font-size: 11px;
+      font-weight: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .handsontable td {
+      background: #252525 !important;
+      color: #e0e0e0 !important;
+      border-color: #333 !important;
+      font-size: 12px;
+    }
+
+    .handsontable .ht_clone_top th,
+    .handsontable .ht_clone_left th {
+      background: #2a2a2a !important;
+      color: #e0e0e0 !important;
+    }
+
+    .handsontable .ht_clone_top td,
+    .handsontable .ht_clone_left td {
+      background: #252525 !important;
+      color: #e0e0e0 !important;
+    }
+
+    .handsontable .currentRow {
+      background: #333333 !important;
+    }
+
+    .handsontable .currentCol {
+      background: #333333 !important;
+    }
+
+    .handsontable .area {
+      background: rgba(0, 255, 159, 0.1) !important;
+      border-color: #00ff9f !important;
+    }
+
+    .handsontable .fillHandle {
+      background: #00ff9f !important;
+    }
+
+    .handsontable input,
+    .handsontable textarea {
+      background: #252525 !important;
+      color: #e0e0e0 !important;
+      border-color: #333 !important;
+    }
+
+    .handsontable input:focus,
+    .handsontable textarea:focus {
+      background: #2a2a2a !important;
+      border-color: #00ff9f !important;
+      box-shadow: 0 0 0 2px rgba(0, 255, 159, 0.2) !important;
+    }
+
+    .handsontable .ht_master .wtHolder {
+      background: #252525;
+    }
+
+    .handsontable .wtBorder {
+      background: #00ff9f !important;
+    }
+
+    .handsontable .htContextMenu {
+      background: #2a2a2a !important;
+      border-color: #333 !important;
+    }
+
+    .handsontable .htContextMenu table.htCore td {
+      background: #2a2a2a !important;
+      color: #e0e0e0 !important;
+      border-color: #333 !important;
+    }
+
+    .handsontable .htContextMenu table.htCore td.htSeparator {
+      border-color: #333 !important;
+    }
+
+    .handsontable .htContextMenu table.htCore td:hover {
+      background: #333333 !important;
+    }
+
+    .handsontable .htDropdownMenu {
+      background: #2a2a2a !important;
+      border-color: #333 !important;
+    }
+
+    .handsontable .htDropdownMenu table.htCore td {
+      background: #2a2a2a !important;
+      color: #e0e0e0 !important;
+    }
+
+    .handsontable .htDropdownMenu table.htCore td:hover {
+      background: #333333 !important;
+    }
+
+    .handsontable .htRowHeader {
+      background: #2a2a2a !important;
+      color: #888 !important;
+      border-color: #333 !important;
+    }
+
+    .handsontable .htColHeader {
+      background: #2a2a2a !important;
+      color: #888 !important;
+      border-color: #333 !important;
+    }
   </style>
 </head>
 <body>
@@ -304,179 +506,48 @@
     <div class="content">
       <div class="input-section">
         <div class="input-group">
-          <label for="beamLength">Beam Length (ft):</label>
+          <label for="beamLength">Beam Length</label>
           <input type="number" id="beamLength" value="20" step="0.1" min="0.1">
         </div>
         <div class="input-group">
-          <label for="maxDeflection">Maximum Deflection Limit (in):</label>
-          <input type="number" id="maxDeflection" value="" step="0.01" min="0.01" placeholder="e.g., L/360 = 0.67">
-          <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;">
-            Common values: L/360 = <span id="l360Value">0.67</span> in, L/240 = <span id="l240Value">1.00</span> in, L/180 = <span id="l180Value">1.33</span> in
-          </p>
+          <label for="maxDeflection">Max Deflection</label>
+          <input type="number" id="maxDeflection" value="" step="0.01" min="0.01">
         </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #888;">
+          <span>L/360: <span id="l360Value">0.67</span></span>
+          <span>L/240: <span id="l240Value">1.00</span></span>
+          <span>L/180: <span id="l180Value">1.33</span></span>
+        </div>
+        <button class="btn-analyze" onclick="analyzeBeam()" style="margin-left: auto;">Analyze</button>
       </div>
 
       <div class="spreadsheet-container">
-        <h3 class="spreadsheet-title">Point Loads</h3>
-        <div class="table-container">
-          <table id="pointLoadsTable">
-            <thead>
-              <tr>
-                <th>Location (ft)</th>
-                <th>Load (kips)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="pointLoadsBody">
-              <tr>
-                <td><input type="number" class="table-input point-location" value="10" step="0.1" min="0" id="defaultPointLocation"></td>
-                <td><input type="number" class="table-input point-magnitude" value="5" step="0.1"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-              <tr class="empty-row">
-                <td><input type="number" class="table-input point-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-                <td><input type="number" class="table-input point-magnitude" value="" step="0.1" placeholder="Enter load"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-            </tbody>
-          </table>
+        <h3 class="spreadsheet-title">Beam Loads & Supports</h3>
+        <div class="table-container" style="max-height: 400px;">
+          <div id="unifiedTableHot"></div>
         </div>
-        <button class="btn btn-add" onclick="addPointLoad()">+ Add Point Load</button>
       </div>
 
-      <div class="spreadsheet-container">
-        <h3 class="spreadsheet-title">Distributed Loads</h3>
-        <div class="table-container">
-          <table id="distributedLoadsTable">
-            <thead>
-              <tr>
-                <th>Start (ft)</th>
-                <th>End (ft)</th>
-                <th>Load (kips/ft)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="distributedLoadsBody">
-              <tr>
-                <td><input type="number" class="table-input dist-start" value="0" step="0.1" min="0" id="defaultDistStart"></td>
-                <td><input type="number" class="table-input dist-end" value="20" step="0.1" min="0" id="defaultDistEnd"></td>
-                <td><input type="number" class="table-input dist-magnitude" value="1" step="0.1"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-              <tr class="empty-row">
-                <td><input type="number" class="table-input dist-start" value="" step="0.1" min="0" placeholder="Start"></td>
-                <td><input type="number" class="table-input dist-end" value="" step="0.1" min="0" placeholder="End"></td>
-                <td><input type="number" class="table-input dist-magnitude" value="" step="0.1" placeholder="Load"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button class="btn btn-add" onclick="addDistributedLoad()">+ Add Distributed Load</button>
-      </div>
-
-      <div class="spreadsheet-container">
-        <h3 class="spreadsheet-title">Point Moments</h3>
-        <div class="table-container">
-          <table id="pointMomentsTable">
-            <thead>
-              <tr>
-                <th>Location (ft)</th>
-                <th>Moment (kip-ft)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="pointMomentsBody">
-              <tr class="empty-row">
-                <td><input type="number" class="table-input moment-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-                <td><input type="number" class="table-input moment-magnitude" value="" step="0.1" placeholder="Enter moment"></td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button class="btn btn-add" onclick="addPointMoment()">+ Add Point Moment</button>
-      </div>
-
-      <div class="spreadsheet-container">
-        <h3 class="spreadsheet-title">Support Locations</h3>
-        <div class="table-container">
-          <table id="supportsTable">
-            <thead>
-              <tr>
-                <th>Location (ft)</th>
-                <th>Support Type</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="supportsBody">
-              <tr>
-                <td><input type="number" class="table-input support-location" value="0" step="0.1" min="0"></td>
-                <td>
-                  <select class="table-input support-type">
-                    <option value="pinned" selected>Pinned</option>
-                    <option value="roller">Roller</option>
-                    <option value="fixed">Fixed</option>
-                  </select>
-                </td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-              <tr>
-                <td><input type="number" class="table-input support-location" value="20" step="0.1" min="0"></td>
-                <td>
-                  <select class="table-input support-type">
-                    <option value="pinned">Pinned</option>
-                    <option value="roller" selected>Roller</option>
-                    <option value="fixed">Fixed</option>
-                  </select>
-                </td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-              <tr class="empty-row">
-                <td><input type="number" class="table-input support-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-                <td>
-                  <select class="table-input support-type">
-                    <option value="pinned">Pinned</option>
-                    <option value="roller">Roller</option>
-                    <option value="fixed">Fixed</option>
-                  </select>
-                </td>
-                <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button class="btn btn-add" onclick="addSupport()">+ Add Support</button>
-        <p style="margin-top: 10px; font-size: 0.9em; color: #aaa;">
-          <strong>Note:</strong> For statically determinate beams, you need exactly one pinned support and one roller support. 
-          For indeterminate beams, you can add more supports.
-        </p>
-      </div>
-
-      <div style="text-align: center;">
-        <button class="btn-analyze" onclick="analyzeBeam()">🔍 Analyze Beam</button>
-      </div>
-
-      <div id="results" class="results" style="display: none;">
-        <h3>Analysis Results</h3>
-        <div id="beamRepresentation" class="beam-diagram"></div>
+      <div id="results" class="results">
+        <h3>Results</h3>
         <div class="calculation-results">
           <div class="result-card">
-            <div class="result-label">Ultimate Moment</div>
+            <div class="result-label">Moment</div>
             <div class="result-value" id="momentValue">0.00</div>
-            <div>kip-ft</div>
+            <div class="result-unit">kip-ft</div>
           </div>
           <div class="result-card">
-            <div class="result-label">Ultimate Shear</div>
+            <div class="result-label">Shear</div>
             <div class="result-value" id="shearValue">0.00</div>
-            <div>kips</div>
+            <div class="result-unit">kips</div>
           </div>
           <div class="result-card">
             <div class="result-label">EI Required</div>
             <div class="result-value" id="eiValue">0.00</div>
-            <div>(10^6) in²-lb</div>
+            <div class="result-unit">(10^6) in²-lb</div>
           </div>
         </div>
+        <div id="beamRepresentation" class="beam-diagram" style="display: none;"></div>
         <div id="plotlyDiv"></div>
       </div>
 
@@ -485,114 +556,143 @@
   </div>
 
   <script>
-    function addPointLoad() {
-      const tbody = document.getElementById('pointLoadsBody');
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="number" class="table-input point-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-        <td><input type="number" class="table-input point-magnitude" value="" step="0.1" placeholder="Enter load"></td>
-        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-      `;
-      tbody.appendChild(newRow);
+    // Unified Handsontable instance
+    let unifiedTableHot;
+
+    // Initialize unified Handsontable
+    function initializeHandsontable() {
+      const container = document.getElementById('unifiedTableHot');
+      unifiedTableHot = new Handsontable(container, {
+        data: [
+          ['Point Load', 10, 5, null],
+          ['Distributed Load', 0, 20, 1],
+          ['Support', 0, 'pinned', null],
+          ['Support', 20, 'roller', null]
+        ],
+        columns: [
+          { 
+            type: 'dropdown',
+            title: 'Type',
+            source: ['Point Load', 'Distributed Load', 'Point Moment', 'Support'],
+            width: 140
+          },
+          { 
+            type: 'numeric', 
+            title: 'Location_ft',
+            width: 110
+          },
+          { 
+            type: 'numeric', 
+            title: 'Load_kips | End_ft | Moment_kip_ft | Support_Type',
+            width: 200
+          },
+          { 
+            type: 'numeric', 
+            title: 'Load_kips_per_ft',
+            width: 140
+          }
+        ],
+        colHeaders: true,
+        rowHeaders: true,
+        contextMenu: true,
+        copyPaste: true,
+        manualColumnResize: true,
+        height: 400,
+        maxRows: 200,
+        licenseKey: 'non-commercial-and-evaluation',
+        stretchH: 'all',
+        afterChange: function(changes, source) {
+          if (source === 'loadData' || !changes) return;
+          
+          changes.forEach(([row, col, oldValue, newValue]) => {
+            // If Type column changed, clear column 3 if not Distributed Load
+            if (col === 0) {
+              if (newValue !== 'Distributed Load') {
+                this.setDataAtCell(row, 3, null);
+              }
+              this.render();
+            }
+          });
+        },
+        cells: function(row, col) {
+          const cellProperties = {};
+          const type = this.instance.getDataAtCell(row, 0);
+          
+          if (col === 2) {
+            // Column 2: Load_kips | End_ft | Moment_kip_ft | Support_Type
+            if (type === 'Support') {
+              cellProperties.type = 'dropdown';
+              cellProperties.source = ['pinned', 'roller', 'fixed'];
+            } else {
+              cellProperties.type = 'numeric';
+            }
+          } else if (col === 3) {
+            // Column 3: Load_kips_per_ft (only for Distributed Load)
+            if (type === 'Distributed Load') {
+              cellProperties.type = 'numeric';
+            } else {
+              cellProperties.readOnly = true;
+              cellProperties.renderer = function(instance, td) {
+                td.innerHTML = '';
+                td.style.background = '#1e1e1e';
+              };
+            }
+          }
+          
+          return cellProperties;
+        }
+      });
     }
 
-    function addDistributedLoad() {
-      const tbody = document.getElementById('distributedLoadsBody');
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="number" class="table-input dist-start" value="" step="0.1" min="0" placeholder="Start"></td>
-        <td><input type="number" class="table-input dist-end" value="" step="0.1" min="0" placeholder="End"></td>
-        <td><input type="number" class="table-input dist-magnitude" value="" step="0.1" placeholder="Load"></td>
-        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-      `;
-      tbody.appendChild(newRow);
-    }
-
-    function addPointMoment() {
-      const tbody = document.getElementById('pointMomentsBody');
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="number" class="table-input moment-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-        <td><input type="number" class="table-input moment-magnitude" value="" step="0.1" placeholder="Enter moment"></td>
-        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-      `;
-      tbody.appendChild(newRow);
-    }
-
-    function addSupport() {
-      const tbody = document.getElementById('supportsBody');
-      const newRow = document.createElement('tr');
-      newRow.innerHTML = `
-        <td><input type="number" class="table-input support-location" value="" step="0.1" min="0" placeholder="Enter location"></td>
-        <td>
-          <select class="table-input support-type">
-            <option value="pinned">Pinned</option>
-            <option value="roller">Roller</option>
-            <option value="fixed">Fixed</option>
-          </select>
-        </td>
-        <td><button class="btn btn-remove" onclick="removeRow(this)">Remove</button></td>
-      `;
-      tbody.appendChild(newRow);
-    }
-
-    function removeRow(button) {
-      const row = button.closest('tr');
-      const tbody = row.parentNode;
-      
-      // Don't remove if it's the last row in the table
-      if (tbody.children.length > 1) {
-        row.remove();
-      } else {
-        // Clear the inputs instead
-        row.querySelectorAll('input').forEach(input => input.value = '');
-      }
-    }
 
     function analyzeBeam() {
       // Get input values
       const beamLength = parseFloat(document.getElementById('beamLength').value);
       
-      // Get point loads from table
+      // Get all data from unified Handsontable
       const pointLoads = [];
-      document.querySelectorAll('#pointLoadsBody tr').forEach(row => {
-        const location = parseFloat(row.querySelector('.point-location').value);
-        const magnitude = parseFloat(row.querySelector('.point-magnitude').value);
-        if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength && magnitude !== 0) {
-          pointLoads.push({location, magnitude: magnitude * 1000}); // Convert to pounds
-        }
-      });
-
-      // Get distributed loads from table
       const distributedLoads = [];
-      document.querySelectorAll('#distributedLoadsBody tr').forEach(row => {
-        const start = parseFloat(row.querySelector('.dist-start').value);
-        const end = parseFloat(row.querySelector('.dist-end').value);
-        const magnitude = parseFloat(row.querySelector('.dist-magnitude').value);
-        if (!isNaN(start) && !isNaN(end) && !isNaN(magnitude) && start < end && end <= beamLength && magnitude !== 0) {
-          distributedLoads.push({start, end, magnitude: magnitude * 1000}); // Convert to pounds/ft
-        }
-      });
-
-      // Get point moments from table
       const pointMoments = [];
-      document.querySelectorAll('#pointMomentsBody tr').forEach(row => {
-        const location = parseFloat(row.querySelector('.moment-location').value);
-        const magnitude = parseFloat(row.querySelector('.moment-magnitude').value);
-        if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength && magnitude !== 0) {
-          pointMoments.push({location, magnitude}); // Keep in kip-ft
-        }
-      });
-
-      // Get supports from table
       const supports = [];
-      document.querySelectorAll('#supportsBody tr').forEach(row => {
-        const location = parseFloat(row.querySelector('.support-location').value);
-        const type = row.querySelector('.support-type').value;
-        if (!isNaN(location) && type) {
-          supports.push({location, type});
-        }
-      });
+      
+      if (unifiedTableHot) {
+        const data = unifiedTableHot.getData();
+        data.forEach(row => {
+          const type = row[0];
+          const val1 = row[1];
+          const val2 = row[2];
+          const val3 = row[3];
+          
+          if (!type) return; // Skip empty rows
+          
+          if (type === 'Point Load') {
+            const location = parseFloat(val1);
+            const magnitude = parseFloat(val2);
+            if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength && magnitude !== 0) {
+              pointLoads.push({location, magnitude: magnitude * 1000}); // Convert to pounds
+            }
+          } else if (type === 'Distributed Load') {
+            const start = parseFloat(val1);
+            const end = parseFloat(val2);
+            const magnitude = parseFloat(val3);
+            if (!isNaN(start) && !isNaN(end) && !isNaN(magnitude) && start < end && end <= beamLength && magnitude !== 0) {
+              distributedLoads.push({start, end, magnitude: magnitude * 1000}); // Convert to pounds/ft
+            }
+          } else if (type === 'Point Moment') {
+            const location = parseFloat(val1);
+            const magnitude = parseFloat(val2);
+            if (!isNaN(location) && !isNaN(magnitude) && location <= beamLength && magnitude !== 0) {
+              pointMoments.push({location, magnitude}); // Keep in kip-ft
+            }
+          } else if (type === 'Support') {
+            const location = parseFloat(val1);
+            const supportType = val2;
+            if (!isNaN(location) && supportType) {
+              supports.push({location, type: supportType});
+            }
+          }
+        });
+      }
 
       // Sort loads
       pointLoads.sort((a, b) => a.location - b.location);
@@ -842,6 +942,7 @@
 
     function displayResults(beamLength, pointLoads, distributedLoads, pointMoments, supports, Mu, Vu, EIRequired, x, V, M) {
       document.getElementById('results').style.display = 'block';
+      document.getElementById('beamRepresentation').style.display = 'block';
 
       let beamRep = 'Multi-Support Beam:\n';
       beamRep += 'A' + '─'.repeat(Math.floor(beamLength * 2)) + 'B\n';
@@ -936,7 +1037,7 @@
           zerolinecolor: '#555',
           zerolinewidth: 2
         },
-        height: 700,
+        height: 500,
         plot_bgcolor: '#1e1e1e', /* Dark plot background */
         paper_bgcolor: '#1e1e1e', /* Dark paper background */
         font: { family: 'Consolas, monospace', color: '#e0e0e0' },
@@ -957,40 +1058,25 @@
         displaylogo: false
       });
 
-      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+      // Results are always visible, no need to scroll
     }
 
-    document.addEventListener('input', function(e) {
-      if (e.target.classList.contains('table-input')) {
-        const row = e.target.closest('tr');
-        const hasValues = Array.from(row.querySelectorAll('input')).some(input => input.value !== '');
-        
-        if (hasValues) {
-          row.classList.remove('empty-row');
-        } else {
-          row.classList.add('empty-row');
-        }
-      }
-    });
 
     function updateDefaultValues() {
       const beamLength = parseFloat(document.getElementById('beamLength').value) || 20;
       const midLength = beamLength / 2;
       
-      // Update point load location to midlength
-      const pointLocationInput = document.getElementById('defaultPointLocation');
-      if (pointLocationInput) {
-        pointLocationInput.value = midLength.toFixed(1);
-      }
-      
-      // Update distributed load to span full beam
-      const distStartInput = document.getElementById('defaultDistStart');
-      const distEndInput = document.getElementById('defaultDistEnd');
-      if (distStartInput) {
-        distStartInput.value = '0';
-      }
-      if (distEndInput) {
-        distEndInput.value = beamLength.toFixed(1);
+      // Update point load location to midlength in unified table
+      if (unifiedTableHot) {
+        const data = unifiedTableHot.getData();
+        data.forEach((row, index) => {
+          if (row[0] === 'Point Load') {
+            unifiedTableHot.setDataAtCell(index, 1, midLength.toFixed(1));
+          } else if (row[0] === 'Distributed Load') {
+            unifiedTableHot.setDataAtCell(index, 1, 0);
+            unifiedTableHot.setDataAtCell(index, 2, beamLength.toFixed(1));
+          }
+        });
       }
       
       // Update deflection limit helper values
@@ -1017,6 +1103,7 @@
     document.getElementById('beamLength').addEventListener('input', updateDefaultValues);
 
     window.onload = function() {
+      initializeHandsontable();
       updateDefaultValues();
       analyzeBeam();
     };

@@ -8,6 +8,7 @@ toc-title: Contents
 ---
 ## Representing Shear Wall Moment as Distributed Load Calc
 This is useful for applying moments accurately, through shear walls into mat foundations to design the reinforcement in the mat foundation.
+[App that does this calc](https://huggingface.co/spaces/gabekafka/u-wall-moment-axial)
 ![Distributed_Force](assets/data/dist_force_rep_moment.png)
 
 ## Concrete Stress Block Plotted and Interactive

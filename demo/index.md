@@ -6,6 +6,14 @@ author-url: "https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b"
 lang: en
 toc-title: Contents
 ---
+## 2-Way Slab Tributary Area App
+Demo of tributary area tool workflow. [GitHub](https://github.com/gabe-kafka/conc-slab-tributary-area-public)
+![2-Way Slab Tributary Area App demo](assets/data/two_way_slab_tributary_area_demo.png)
+
+## Biaxial Column Design
+Biaxial column interaction per ACI 318. [Biaxial Column Design](https://huggingface.co/spaces/gabekafka/biaxial-column-aci318)
+![Biaxial Column 3D Surface](assets/data/biaxial_column.png)
+
 ## Representing Shear Wall Moment as Distributed Load Calc
 This is useful for applying moments accurately, through shear walls into mat foundations to design the reinforcement in the mat foundation.
 [App that does this calc](https://huggingface.co/spaces/gabekafka/u-wall-moment-axial)
@@ -63,4 +71,6 @@ This one is rough but its funny how often I find myself using it
 Linkedin: [Gabriel Kafka Linkedin](https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/)
 
 Hugging Face [gabekafka huggingface](https://huggingface.co/gabekafka)
+
+Personal site: [Gabriel Kafka](personal/index.html)
 

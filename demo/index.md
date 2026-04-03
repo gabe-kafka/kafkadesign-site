@@ -6,9 +6,11 @@ author-url: "https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b"
 lang: en
 toc-title: Contents
 ---
+##
+
 ## ASCE7-22 CH26 - AGENT-TWIN
-Parallel version to chapter 26 of the ASCE building code, but json, so agents can use more efficiently and accurately.  [GitHub](https://github.com/gabe-kafka/bldg-code-2-json)
-![Agent-Twin ASCE7-22](assets/data/agent-twin.png)
+Parallel version to chapter 26 of the ASCE building code, but json, so agents can use more efficiently and accurately.  [GitHub](https://bldg-code-agentic-demo.vercel.app/#p280)
+![Agent-Twin ASCE7-22](assets/data/asce-722-ch26.png)
 
 ## 2-Way Slab Tributary Area App
 Demo of tributary area tool workflow. [GitHub](https://github.com/gabe-kafka/conc-slab-tributary-area-public)

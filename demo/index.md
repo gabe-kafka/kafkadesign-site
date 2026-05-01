@@ -17,7 +17,7 @@ Demo of tributary area tool workflow. [GitHub](https://github.com/gabe-kafka/con
 ![2-Way Slab Tributary Area App demo](assets/data/two_way_slab_tributary_area_demo.png)
 
 ## Biaxial Column Design
-Biaxial column interaction per ACI 318. [Biaxial Column Design](https://huggingface.co/spaces/gabekafka/biaxial-column-aci318)
+Biaxial column interaction per ACI 318. [Biaxial Column Design](https://biaxial-column-aci318.vercel.app/)
 ![Biaxial Column 3D Surface](assets/data/biaxial_column.png)
 
 ## Representing Shear Wall Moment as Distributed Load Calc

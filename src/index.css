@@ -200,6 +200,17 @@ img {
   color: var(--text-color-alt);
 }
 
+.tributary-preview-link {
+  display: block;
+  width: min(100%, 72ch);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tributary-rotating-preview {
+  background: #000;
+}
+
 details {
   border: var(--border-thickness) solid var(--text-color);
   padding: calc(var(--line-height) - var(--border-thickness)) 1ch;

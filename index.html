@@ -26,8 +26,11 @@ Kafka</cite></a></td>
 <nav id="TOC" role="doc-toc">
 <h2 id="toc-title">Contents</h2>
 <ul class="incremental">
-<li><a href="#section" id="toc-section"></a></li>
-<li><a href="#accelerometer" id="toc-accelerometer">Accelerometer</a></li>
+<li><a href="#tributary-plate-slab-column-load-takedown-tool"
+id="toc-tributary-plate-slab-column-load-takedown-tool">Tributary
+Plate Slab Column Load Takedown Tool</a></li>
+<li><a href="#pr-shm-accelerometer-node"
+id="toc-pr-shm-accelerometer-node">Low-Cost Cellular Accelerometer Node for SHM (Puerto Rico)</a></li>
 <li><a href="#hanson-punching" id="toc-hanson-punching">Hanson Punching</a></li>
 <li><a href="#monte-carlo" id="toc-monte-carlo">Monte Carlo</a></li>
 <li><a href="#asce7-22-ch26---agent-twin"
@@ -68,24 +71,55 @@ id="toc-structural-terminal">Structural Terminal</a></li>
 id="toc-structural-analysis">structural-analysis-2</a></li>
 </ul>
 </nav>
-<h2 id="section"></h2>
-<h2 id="accelerometer">Accelerometer</h2>
-<p>Solar MEMS sensor frontend for our NYU thesis project, deployed in
-PR. <a
-href="https://accelerometer-frontend.vercel.app/">Accelerometer</a></p>
+<h2
+id="tributary-plate-slab-column-load-takedown-tool">Tributary Plate
+Slab Column Load Takedown Tool</h2>
+<p><a href="https://conc-slab-tributary-area-public.vercel.app/">Site</a>
+· <a
+href="https://github.com/gabe-kafka/conc-slab-tributary-area-public">GitHub</a></p>
+<p>Open source column load take-down app, especially useful for tall
+concrete buildings.</p>
+<p><a class="tributary-preview-link"
+href="https://conc-slab-tributary-area-public.vercel.app/"><img
+class="tributary-rotating-preview"
+src="assets/data/tributary-plate-slab-column-load-takedown.gif"
+alt="Tributary plate slab column load takedown model preview" /></a></p>
+<h2 id="pr-shm-accelerometer-node">Low-Cost Cellular Accelerometer Node for SHM (Puerto Rico)</h2>
+<p>NYU Tandon thesis project (Advisor: Masoud Ghandehari). A low-cost
+cellular accelerometer node for structural health monitoring of
+transmission towers in Puerto Rico — Nordic Thingy:91 X with onboard
+ADXL367, LTE-M telemetry, a solar-assisted power front end, and a
+Supabase / PostgREST cloud pipeline streaming triaxial acceleration as a
+continuous FIFO batch. Sensor viability was benchmarked against a LORD
+S-200 reference: calibrated magnitude correlation ≈ 0.955, RMSE ≈
+0.040 g, and FFT amplitude correlation ≈ 0.952 over 0–12.5 Hz.</p>
+<p><a href="assets/data/pr-shm-accelerometer-final-report.pdf">Final
+Research Paper (PDF)</a> · <a
+href="https://accelerometer-frontend.vercel.app/">Live Dashboard</a> ·
+<a href="https://accelerometer-viability-axis-calibr.vercel.app/">Reference-Sensor
+Viability Test</a></p>
+<p><img src="assets/data/pr-shm-hardware-architecture.png"
+alt="PR-SHM sensor node hardware architecture" /></p>
 <h2 id="hanson-punching">Hanson Punching</h2>
 <p>Interactive 3D visualization of the Hanson &amp; Hanson (1968)
 eccentric-shear decomposition for slab–column punching, per ACI 318
 §8.4.2.3. <a href="https://hanson-hanson-punching.vercel.app/">Hanson
 Punching</a></p>
+<p><img src="assets/data/hanson-punching.gif"
+alt="Hanson Punching eccentric-shear decomposition" /></p>
 <h2 id="monte-carlo">Monte Carlo</h2>
 <p>Economic risk analysis for a 41-story concrete building. <a
 href="https://monte-carlo-mobile.vercel.app/">Monte Carlo</a></p>
+<p><img src="assets/data/monte-carlo-triangular-distributions.png"
+alt="Monte Carlo triangular activity-duration distributions" /></p>
 <h2 id="asce7-22-ch26---agent-twin">ASCE7-22 CH26 - AGENT-TWIN</h2>
 <p>Parallel version to chapter 26 of the ASCE building code, but json,
 so agents can use more efficiently and accurately. <a
 href="https://bldg-code-agentic-demo.vercel.app/#p280">GitHub</a> <img
 src="assets/data/asce-722-ch26.png" alt="Agent-Twin ASCE7-22" /></p>
+<p>Note: this project is an artifact of a time where models couldn't
+accurately pull from bldg-code. gpt5.5 and opus 4.7. very accurately
+pull from building codes without "building-code-api's".</p>
 <h2 id="way-slab-tributary-area-app">2-Way Slab Tributary Area App</h2>
 <p>Demo of tributary area tool workflow. <a
 href="https://github.com/gabe-kafka/conc-slab-tributary-area-public">GitHub</a>
@@ -161,7 +195,7 @@ href="https://www.linkedin.com/in/gabriel-kafka-gibbons-a01b5914b/">Gabriel
 Kafka Linkedin</a></p>
 <p>Hugging Face <a href="https://huggingface.co/gabekafka">gabekafka
 huggingface</a></p>
-<p>Personal site: <a href="personal/index.html">Gabriel Kafka</a></p>
+<p>Sites: <a href="index.html">Structural Tools</a> / <a href="personal/index.html">Personal Projects</a> / <a href="portfolio/index.html">Portfolio</a></p>
   <div class="debug-grid"></div>
   <script src="src/index.js"></script>
 </body>
